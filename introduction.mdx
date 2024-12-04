@@ -1,71 +1,233 @@
 ---
-title: Introduction
-description: 'Welcome to the home of your new documentation'
+title: 'Introduction'
+description: 'Introduction to Mirror Vectax SDK'
 ---
 
-<img
-  className="block dark:hidden"
-  src="/images/hero-light.svg"
-  alt="Hero Light"
-/>
-<img
-  className="hidden dark:block"
-  src="/images/hero-dark.svg"
-  alt="Hero Dark"
-/>
 
-## Setting up
+## The Challenge
 
-The first step to world-class documentation is setting up your editing environments.
+In today's AI landscape, organizations face a critical trade-off between innovation and security. Traditional encryption breaks AI functionality, forcing teams to choose between protecting sensitive data and maintaining AI performance. This creates significant risks in regulatory compliance, data privacy, and intellectual property protection.
+
+<Info>
+  Mirror Vectax SDK enables privacy-preserving AI by providing specialized encryption designed for machine learning operations.
+</Info>
+
+## Our Solution
+
+Organizations can now perform AI operations on encrypted data without sacrificing model accuracy or performance. Here are our key features:
 
 <CardGroup cols={2}>
-  <Card
-    title="Edit Your Docs"
-    icon="pen-to-square"
-    href="https://mintlify.com/docs/quickstart"
-  >
-    Get your docs set up locally for easy development
+  <Card title="Secure Vector Operations" > 
+
+  <Icon icon="shield-halved"  iconType="solid" color="#8c57ff"  href="/docs/secure-vector" />
+
+    Enterprise-grade security for vector operations with similarity-preserving
+    encryption. Protect your embeddings while maintaining searchability.
   </Card>
-  <Card
-    title="Preview Changes"
-    icon="image"
-    href="https://mintlify.com/docs/development"
-  >
-    Preview your changes before you push to make sure they're perfect
+
+  <Card title="Fine-Grained Access Control">
+<Icon icon="check" iconType="solid" color="#8c57ff"  href="/docs/access-control" />
+  
+    Built-in RBAC with multi-dimensional policies. Control access at role,
+    group, and department levels with comprehensive audit trails.
+  </Card>
+
+  <Card title="Format-Preserving Encryption" >
+  <Icon icon="lock" iconType="solid" color="#8c57ff"  href="/docs/access-control" />
+
+    Encrypt sensitive data while maintaining format and searchability.
+    Perfect for securing metadata, PII, and structured data.
+  </Card>
+
+  <Card title="Secure Agents Pipeline">
+    <Icon icon="diagram-project" iconType="solid" color="#8c57ff"  href="/docs/agents" />
+
+    End-to-end security for machine learning workflows. From data ingestion
+    to model serving, protect every step of your ML pipeline.
+  </Card>
+
+  <Card title="Vector Search">
+      <Icon icon="magnifying-glass" iconType="solid" color="#8c57ff"  href="/docs/vector-search" />
+
+    Encrypted similarity search with ChromaDB integration. Search through
+    millions of vectors while maintaining data confidentiality.
+  </Card>
+
+  <Card title="Encrypted Inference" > 
+
+        <Icon icon="microchip" iconType="solid" color="#8c57ff"  href="/docs/inference" />
+
+    Run secure model inference with encrypted inputs and outputs. Perfect
+    for sensitive applications and regulated industries.
   </Card>
 </CardGroup>
 
-## Make it yours
+## Industry Solutions
 
-Update your docs to your brand and add valuable content for the best user conversion.
+<Tabs>
+  <Tab title="Financial Services">
+    <Warning>
+      Financial institutions must comply with strict data protection regulations while processing sensitive transaction data.
+    </Warning>
 
-<CardGroup cols={2}>
-  <Card
-    title="Customize Style"
-    icon="palette"
-    href="https://mintlify.com/docs/settings/global"
-  >
-    Customize your docs to your company's colors and brands
-  </Card>
-  <Card
-    title="Reference APIs"
-    icon="code"
-    href="https://mintlify.com/docs/api-playground/openapi"
-  >
-    Automatically generate endpoints from an OpenAPI spec
-  </Card>
-  <Card
-    title="Add Components"
-    icon="screwdriver-wrench"
-    href="https://mintlify.com/docs/components/accordion"
-  >
-    Build interactive features and designs to guide your users
-  </Card>
-  <Card
-    title="Get Inspiration"
-    icon="stars"
-    href="https://mintlify.com/customers"
-  >
-    Check out our showcase of our favorite documentation
+    Process sensitive transaction data, detect fraud patterns, and protect trading algorithms while maintaining regulatory compliance.
+  </Tab>
+
+  <Tab title="Healthcare">
+    <Warning>
+      HIPAA compliance is mandatory when handling patient data in healthcare applications.
+    </Warning>
+
+    Analyze patient data, process medical images, and collaborate on research while ensuring HIPAA compliance and patient privacy.
+  </Tab>
+
+  <Tab title="Enterprise AI">
+    <Warning>
+      Enterprise AI systems often process sensitive customer and business data that requires protection.
+    </Warning>
+
+    Deploy secure document classification, customer analytics, and recommendation systems with protected data and models.
+  </Tab>
+</Tabs>
+# Getting Started
+
+This guide will help you get started with Mirror Vectax SDK in 15 minutes.
+
+## Requirements
+
+<CodeGroup>
+```python Python
+Python 3.9+
+Mirror Vectax API key
+OpenAI API key (optional - for examples)
+```
+</CodeGroup>
+
+## Installation
+
+<Steps>
+<Step title="Install Core SDK">
+```bash
+# Install core SDK
+pip install mirror-sdk
+
+# For examples with OpenAI and ChromaDB
+pip install mirror-sdk[examples]
+```
+</Step>
+
+<Step title="Configure Environment">
+```bash
+export MIRROR_API_KEY="your-api-key"
+export OPENAI_API_KEY="your-openai-key"  # if using examples
+```
+</Step>
+
+<Step title="Initialize SDK">
+```python
+from mirror_sdk.core.mirror_core import MirrorSDK, MirrorConfig
+
+config = MirrorConfig.from_env()
+sdk = MirrorSDK(config)
+```
+</Step>
+</Steps>
+
+## Basic Usage
+
+### Secure Vector Operations
+
+<CodeGroup>
+```python Vector Operations
+from mirror_sdk.core.models import VectorData
+
+# Encrypt model embeddings
+embeddings = [1.0, 2.0, 3.0, 4.0, 5.0]
+vector = VectorData(vector=embeddings, id="customer_vector")
+encrypted = sdk.vector.encrypt(vector)
+
+# Decrypt when needed
+decrypted = sdk.vector.decrypt(encrypted)
+```
+</CodeGroup>
+
+### Access Control
+
+<CodeGroup>
+```python Access Control
+# Set up access policies
+policy = {
+    "roles": ["data_scientist", "analyst"],
+    "groups": ["research"],
+    "departments": ["ai"]
+}
+sdk.set_policy(policy)
+
+# Generate user access key
+user_key = sdk.rbac.generate_user_secret_key({
+    "roles": ["data_scientist"],
+    "groups": ["research"],
+    "departments": ["ai"]
+})
+```
+</CodeGroup>
+
+## Real-World Example
+
+Here's a complete example of securing an AI workflow:
+
+<CodeGroup>
+```python Complete Example
+import openai
+from mirror_sdk.core.models import VectorData
+
+# 1. Get document embedding
+doc = "Customer feedback analysis"
+embedding = openai.embeddings.create(
+    model="text-embedding-3-small",
+    input=doc
+).data[0].embedding
+
+# 2. Encrypt embedding
+vector = VectorData(
+    vector=embedding,
+    id="feedback_1"
+)
+encrypted = sdk.vector.encrypt(vector)
+
+# 3. Set access controls
+policy = {
+    "roles": ["analyst"],
+    "groups": ["customer_success"]
+}
+user_key = sdk.rbac.generate_user_secret_key(policy)
+
+# 4. Secure metadata
+metadata = {
+    "source": "feedback_survey",
+    "date": "2024-03-01"
+}
+key = sdk.metadata.generate_key()
+tweak = sdk.metadata.generate_tweak_from_data(metadata)
+encrypted_metadata = sdk.metadata.encrypt(metadata, key, tweak)
+```
+</CodeGroup>
+
+
+<Tip>
+For detailed examples and best practices, check out our complete documentation.
+</Tip>
+
+## Ready to Get Started?
+
+<CardGroup cols={1}>
+ 
+
+  <Card title="Request Demo" icon="presentation-screen" href="http://platform.mirrorsecurity.io">
+    See Mirror Vectax in action with a personalized demo and Playground 
   </Card>
 </CardGroup>
+
+<Check>
+  Questions? Contact us at hello@mirrorsecurity.io
+</Check>

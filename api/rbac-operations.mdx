@@ -1,0 +1,126 @@
+---
+title: RBAC Encryption  API
+---
+
+## Policy Management
+
+### set_policy()
+Set the application-wide RBAC policy.
+
+```python
+app_policy = {
+    "roles": ["admin", "analyst", "user"],
+    "groups": ["research", "engineering"],
+    "departments": ["AI", "ML"]
+}
+
+sdk.set_policy(app_policy)
+```
+
+### generate_user_secret_key()
+Generate a user-specific key based on their attributes.
+
+```python
+user_attributes = {
+    "roles": ["analyst"],
+    "groups": ["research"],
+    "departments": ["AI"]
+}
+
+user_key = sdk.rbac.generate_user_secret_key(user_attributes)
+```
+
+## RBAC Vector Operations
+
+### encrypt()
+Encrypt vector with RBAC policy.
+
+```python
+from mirror_sdk.core.models import RBACVectorData
+
+# Create vector with policy
+vector_data = RBACVectorData(
+    vector=[1.0, 2.0, 3.0],
+    id="rbac_vector_1",
+    access_policy={
+        "roles": ["analyst"],
+        "groups": ["research"],
+        "departments": ["AI"]
+    }
+)
+
+# Encrypt with RBAC
+encrypted = sdk.rbac.encrypt(vector_data)
+```
+
+### decrypt()
+Decrypt RBAC-protected vector.
+
+```python
+try:
+    decrypted = sdk.rbac.decrypt(
+        encrypted.crypto,
+        encrypted.encrypted_header,
+        user_key
+    )
+except MirrorError as e:
+    print(f"Access denied: {e}")
+```
+
+### Example: Complete RBAC Flow
+
+```python
+# 1. Setup application policy
+app_policy = {
+    "roles": ["admin", "analyst", "user"],
+    "groups": ["team_a", "team_b"],
+    "departments": ["research", "engineering"]
+}
+sdk.set_policy(app_policy)
+
+# 2. Generate user keys
+admin_key = sdk.rbac.generate_user_secret_key({
+    "roles": ["admin"],
+    "groups": ["team_a"],
+    "departments": ["research"]
+})
+
+analyst_key = sdk.rbac.generate_user_secret_key({
+    "roles": ["analyst"],
+    "groups": ["team_b"],
+    "departments": ["engineering"]
+})
+
+# 3. Create protected vector
+vector_data = RBACVectorData(
+    vector=[1.0, 2.0, 3.0],
+    id="protected_vector",
+    access_policy={
+        "roles": ["admin"],
+        "groups": ["team_a"],
+        "departments": ["research"]
+    }
+)
+
+# 4. Encrypt vector
+encrypted = sdk.rbac.encrypt(vector_data)
+
+# 5. Try access with different keys
+try:
+    # Admin access (should succeed)
+    admin_decrypted = sdk.rbac.decrypt(
+        encrypted.crypto,
+        encrypted.encrypted_header,
+        admin_key
+    )
+    print("Admin access granted")
+    
+    # Analyst access (should fail)
+    analyst_decrypted = sdk.rbac.decrypt(
+        encrypted.crypto,
+        encrypted.encrypted_header,
+        analyst_key
+    )
+except MirrorError as e:
+    print(f"Access denied: {e}")
+```

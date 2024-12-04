@@ -1,0 +1,75 @@
+---
+title: 'Benchmarks'
+description: 'Mirror Vectax Benchmarks'
+---
+
+# Vector Search Benchmarks with Encryption
+
+<Tabs>
+  <Tab title="Performance Overview">
+| Engine | P95 (ms) | P99 (ms) | RPS | Base → Enc Prec | P99+Enc (ms) |
+|--------|----------|----------|-----|-----------------|--------------|
+| Qdrant | 4.95 | 8.62 | 1238 | 0.99 → 0.95 | 8.62 |
+| Weaviate | 7.16 | 11.33 | 1142 | 0.97 → 0.93 | 11.33 |
+| Elasticsearch | 72.53 | 135.68 | 716 | 0.98 → 0.94 | 135.68 |
+| Redis | 160.85 | 167.35 | 625 | 0.97 → 0.93 | 167.35 |
+| Milvus | 441.32 | 576.65 | 219 | 0.99 → 0.95 | 576.65 |
+  </Tab>
+
+  <Tab title="Dataset Analysis">
+| Dataset | Vectors | Dims | Vec Enc(ms) | Total Enc(s) |
+|---------|---------|------|-------------|--------------|
+| dbpedia | 1M | 1536 | 0.0018432 | 1.8432 |
+| deep-image | 10M | 96 | 0.0001152 | 1.1520 |
+| gist | 1M | 960 | 0.0011520 | 1.1520 |
+| glove | 1.2M | 100 | 0.0001200 | 0.1440 |
+  </Tab>
+</Tabs>
+
+## Key Findings
+
+<Tabs>
+  <Tab title="Encryption Impact">
+### Encryption Overhead
+<Tip>
+- Vector encryption: 0.0018432 ms per operation (1536D)
+- Total dataset encryption: 1.8432s (1M vectors)
+- Minimal impact: 0.037% overhead on fastest engine
+</Tip>
+
+### Precision Analysis
+<Warning>
+- Consistent 0.04 precision drop across engines
+- Ranking tiers maintained:
+  - Tier 1 (0.95): Qdrant, Milvus
+  - Tier 2 (0.94): Elasticsearch
+  - Tier 3 (0.93): Weaviate, Redis
+</Warning>
+  </Tab>
+
+ 
+</Tabs>
+
+## Technical Notes
+
+<Warning>
+- Encryption cost: 0.0000012 ms per dimension
+- P99 latencies include worst-case encryption overhead
+- Higher dimensions increase encryption time linearly
+- A detailed benchmark will be open sourced in Q1.
+</Warning>
+
+<Tip>
+- Baseline metrics: [Qdrant Benchmarks](https://qdrant.tech/benchmarks/)
+- Mirror SDK: All telemetry disabled
+- Dataset encryption is one-time indexing cost
+</Tip>
+
+## Methodology
+1. Base metrics sourced from standard vector search benchmarks
+2. Encryption overhead measured independently
+3. Combined metrics represent worst-case scenarios
+4. All tests run on dbpedia-openai-1M-1536-angular dataset
+5. Precision measured against non-encrypted ground truth
+6. RPS calculated under sustained load conditions
+

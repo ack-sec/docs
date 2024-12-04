@@ -1,0 +1,101 @@
+---
+title: System Prompt Encryption 
+---
+
+
+
+## Key Management
+
+### generate_keys()
+Generate encryption keys for prompt protection.
+
+```python
+keys = sdk.prompt.generate_keys()
+```
+
+## Prompt Operations
+
+### encrypt_prompt()
+Encrypt a prompt with owner-specific access.
+
+```python
+encrypted = sdk.prompt.encrypt_prompt(
+    prompt_id="prompt_1",
+    prompt="sensitive prompt text".encode(),
+    owner_id="owner_123",
+    keys=keys
+)
+```
+
+### decrypt_prompt()
+Decrypt an encrypted prompt.
+
+```python
+decrypted = sdk.prompt.decrypt_prompt(
+    encrypted,
+    owner_id="owner_123",
+    keys=keys
+)
+```
+
+### Example: Secure Prompt Management System
+
+```python
+class SecurePromptManager:
+    def __init__(self, sdk):
+        self.sdk = sdk
+        self.prompts = {}
+    
+    def add_prompt(self, prompt_id, prompt_text, owner_id):
+        # Generate fresh keys
+        keys = self.sdk.prompt.generate_keys()
+        
+        # Encrypt prompt
+        encrypted = self.sdk.prompt.encrypt_prompt(
+            prompt_id=prompt_id,
+            prompt=prompt_text.encode(),
+            owner_id=owner_id,
+            keys=keys
+        )
+        
+        # Store with metadata
+        self.prompts[prompt_id] = {
+            "encrypted": encrypted,
+            "owner_id": owner_id,
+            "keys": keys,
+            "created_at": datetime.now()
+        }
+        
+        return prompt_id
+    
+    def get_prompt(self, prompt_id, owner_id):
+        if prompt_id not in self.prompts:
+            raise KeyError("Prompt not found")
+            
+        prompt_data = self.prompts[prompt_id]
+        
+        if prompt_data["owner_id"] != owner_id:
+            raise PermissionError("Not authorized")
+            
+        # Decrypt
+        decrypted = self.sdk.prompt.decrypt_prompt(
+            prompt_data["encrypted"],
+            owner_id,
+            prompt_data["keys"]
+        )
+        
+        return decrypted.decode()
+
+# Usage
+manager = SecurePromptManager(sdk)
+
+# Store sensitive prompt
+prompt_id = manager.add_prompt(
+    "gpt4_trading",
+    "Proprietary trading analysis prompt...",
+    "trading_desk_1"
+)
+
+# Retrieve prompt
+prompt = manager.get_prompt("gpt4_trading", "trading_desk_1")
+```

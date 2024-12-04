@@ -1,0 +1,58 @@
+---
+title: SDK Configuration
+---
+
+
+## MirrorConfig
+
+The main configuration class for initializing the Mirror SDK.
+
+### Configuration Options
+
+```python
+from mirror_sdk.core.mirror_core import MirrorConfig
+
+config = MirrorConfig(
+    api_key="your-api-key",
+    api_url="https://api.mirror.xyz",
+    log_level="INFO",
+    timeout=30,
+    max_retries=3
+)
+```
+
+### Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| api_key | str | Yes | None | Your Mirror SDK API key |
+| api_url | str | No | https://api.mirror.xyz | API endpoint URL |
+| log_level | str | No | "INFO" | Logging level (DEBUG, INFO, WARNING, ERROR) |
+| timeout | int | No | 30 | Request timeout in seconds |
+| max_retries | int | No | 3 | Maximum number of retry attempts |
+
+### Methods
+
+#### from_env()
+Create configuration from environment variables.
+```python
+config = MirrorConfig.from_env()
+```
+
+#### from_file(path: str)
+Create configuration from a JSON file.
+```python
+config = MirrorConfig.from_file("config.json")
+```
+
+## SDK Initialization
+
+```python
+from mirror_sdk.core.mirror_core import MirrorSDK
+
+# Initialize with config
+sdk = MirrorSDK(config)
+
+# Check SDK status
+status = sdk.check_status()
+```

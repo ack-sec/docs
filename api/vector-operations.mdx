@@ -1,0 +1,91 @@
+---
+title: Vector Encryption API
+---
+
+
+## VectorData
+
+Class representing vector data for encryption.
+
+```python
+from mirror_sdk.core.models import VectorData
+
+vector_data = VectorData(
+    vector=[1.0, 2.0, 3.0],
+    id="vector_1",
+    metadata={"source": "user_embedding"}
+)
+```
+
+### Properties
+- `vector`: List[float] - Vector values
+- `id`: str - Unique identifier
+- `metadata`: Optional[Dict] - Additional metadata
+
+## Vector Methods
+
+### encrypt()
+Encrypt a vector while preserving similarity.
+
+```python
+encrypted = sdk.vector.encrypt(vector_data)
+```
+
+#### Parameters
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| vector_data | VectorData | Yes | Vector to encrypt |
+| encryption_key | Optional[bytes] | No | Custom encryption key |
+
+#### Returns
+`EncryptedVector` containing:
+- `ciphertext`: Encrypted vector data
+- `iv`: Initialization vector
+- `auth_hash`: Authentication hash
+
+### decrypt()
+Decrypt an encrypted vector.
+
+```python
+decrypted = sdk.vector.decrypt(encrypted_vector)
+```
+
+### batch_encrypt()
+Encrypt multiple vectors efficiently.
+
+```python
+vectors = [
+    VectorData(vector=v, id=f"vec_{i}")
+    for i, v in enumerate(vectors)
+]
+encrypted_vectors = sdk.vector.batch_encrypt(vectors)
+```
+
+### Example: Complete Vector Operation Flow
+
+```python
+# 1. Create vector data
+vector = [1.0, 2.0, 3.0, 4.0]
+data = VectorData(
+    vector=vector,
+    id="example_vector",
+    metadata={"type": "embedding"}
+)
+
+# 2. Encrypt vector
+encrypted = sdk.vector.encrypt(data)
+
+# 3. Store encrypted vector
+# (Using ChromaDB as example)
+collection.add(
+    ids=[data.id],
+    embeddings=[encrypted.ciphertext],
+    metadatas=[{
+        "iv": encrypted.iv,
+        "auth_hash": encrypted.auth_hash
+    }]
+)
+
+# 4. Later: Decrypt vector
+decrypted = sdk.vector.decrypt(encrypted)
+```

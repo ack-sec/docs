@@ -1,0 +1,99 @@
+---
+title: FPE API
+---
+
+
+## Metadata Operations
+
+### generate_key()
+Generate a new FPE encryption key.
+
+```python
+key = sdk.metadata.generate_key()
+```
+
+### generate_tweak_from_data()
+Generate a tweak value from input data.
+
+```python
+tweak = sdk.metadata.generate_tweak_from_data(data)
+```
+
+## Encryption/Decryption Operations
+
+### encrypt()
+Encrypt data while preserving its format.
+
+```python
+# Example with different data types
+data = {
+    "user_id": "USR123456",
+    "email": "user@example.com",
+    "score": 95.5,
+    "categories": ["A", "B", "C"]
+}
+
+key = sdk.metadata.generate_key()
+tweak = sdk.metadata.generate_tweak_from_data(data)
+encrypted = sdk.metadata.encrypt(data, key, tweak)
+```
+
+### decrypt()
+Decrypt FPE-encrypted data.
+
+```python
+decrypted = sdk.metadata.decrypt(encrypted, key, tweak)
+```
+
+### Example: Complete FPE Flow
+
+```python
+# 1. Setup encryption
+class SecureDataProcessor:
+    def __init__(self, sdk):
+        self.sdk = sdk
+        self.key = sdk.metadata.generate_key()
+    
+    def process_record(self, record):
+        # Generate unique tweak for this record
+        tweak = self.sdk.metadata.generate_tweak_from_data(record)
+        
+        # Encrypt
+        encrypted = self.sdk.metadata.encrypt(
+            record,
+            self.key,
+            tweak
+        )
+        
+        return {
+            "encrypted_data": encrypted,
+            "tweak": tweak
+        }
+    
+    def retrieve_record(self, encrypted_data, tweak):
+        # Decrypt
+        return self.sdk.metadata.decrypt(
+            encrypted_data,
+            self.key,
+            tweak
+        )
+
+# 2. Usage
+processor = SecureDataProcessor(sdk)
+
+# Process sensitive data
+sensitive_record = {
+    "ssn": "123-45-6789",
+    "credit_card": "4111-1111-1111-1111",
+    "phone": "(555) 123-4567"
+}
+
+# Encrypt
+protected = processor.process_record(sensitive_record)
+
+# Decrypt
+original = processor.retrieve_record(
+    protected["encrypted_data"],
+    protected["tweak"]
+)
+```
