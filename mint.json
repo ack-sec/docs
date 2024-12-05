@@ -63,11 +63,11 @@
     {
       "group": "API Reference",
       "pages": [
-        "api/sdk-configuration",
-        "api/vector-operations",
-        "api/rbac-operations",
-        "api/fpe-operations",
-        "api/prompt-operations"
+        "ops/sdk-configuration",
+        "ops/vector-operations",
+        "ops/rbac-operations",
+        "ops/fpe-operations",
+        "ops/prompt-operations"
       ]
     }
   ],
