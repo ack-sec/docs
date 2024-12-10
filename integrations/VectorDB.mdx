@@ -33,7 +33,7 @@ collection = client.create_collection(
 ```python
 # Encrypt vector
 vector_data = VectorData(vector=embedding, id="doc_1")
-encrypted = sdk.vector.encrypt(vector_data)
+encrypted = sdk.vectax.encrypt(vector_data)
 
 # Store with encryption metadata
 collection.add(
@@ -47,7 +47,7 @@ collection.add(
 )
 
 # Secure search
-encrypted_query = sdk.vector.encrypt(
+encrypted_query = sdk.vectax.encrypt(
     VectorData(vector=query_embedding, id="query")
 )
 results = collection.query(
@@ -69,7 +69,7 @@ index = pinecone.Index("secure-index")
 
 # Encrypt and upsert
 vector_data = VectorData(vector=embedding, id="vec1")
-encrypted = sdk.vector.encrypt(vector_data)
+encrypted = sdk.vectax.encrypt(vector_data)
 
 index.upsert([
     (
@@ -84,7 +84,7 @@ index.upsert([
 ])
 
 # Query
-encrypted_query = sdk.vector.encrypt(
+encrypted_query = sdk.vectax.encrypt(
     VectorData(vector=query_vector, id="query")
 )
 results = index.query(
@@ -119,7 +119,7 @@ client.schema.create_class(schema)
 ```python
 # Encrypt and store
 vector_data = VectorData(vector=embedding, id="doc1")
-encrypted = sdk.vector.encrypt(vector_data)
+encrypted = sdk.vectax.encrypt(vector_data)
 
 client.data_object.create(
     class_name="SecureDocument",
@@ -132,7 +132,7 @@ client.data_object.create(
 )
 
 # Search
-encrypted_query = sdk.vector.encrypt(
+encrypted_query = sdk.vectax.encrypt(
     VectorData(vector=query_vector, id="query")
 )
 result = (
@@ -169,7 +169,7 @@ collection = Collection("secure_docs", schema)
 ```python
 # Insert encrypted vectors
 vector_data = VectorData(vector=embedding, id="doc1")
-encrypted = sdk.vector.encrypt(vector_data)
+encrypted = sdk.vectax.encrypt(vector_data)
 
 entities = [
     [0],  # id
@@ -181,7 +181,7 @@ entities = [
 collection.insert(entities)
 
 # Search
-encrypted_query = sdk.vector.encrypt(
+encrypted_query = sdk.vectax.encrypt(
     VectorData(vector=query_vector, id="query")
 )
 search_params = {"metric_type": "L2", "params": {"nprobe": 10}}
@@ -216,7 +216,7 @@ from qdrant_client.models import PointStruct
 
 # Encrypt and store
 vector_data = VectorData(vector=embedding, id="doc1")
-encrypted = sdk.vector.encrypt(vector_data)
+encrypted = sdk.vectax.encrypt(vector_data)
 
 point = PointStruct(
     id=0,
@@ -230,7 +230,7 @@ point = PointStruct(
 client.upsert(collection_name="secure_docs", points=[point])
 
 # Search
-encrypted_query = sdk.vector.encrypt(
+encrypted_query = sdk.vectax.encrypt(
     VectorData(vector=query_vector, id="query")
 )
 results = client.search(

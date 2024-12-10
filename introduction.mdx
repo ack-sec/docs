@@ -144,10 +144,10 @@ from mirror_sdk.core.models import VectorData
 # Encrypt model embeddings
 embeddings = [1.0, 2.0, 3.0, 4.0, 5.0]
 vector = VectorData(vector=embeddings, id="customer_vector")
-encrypted = sdk.vector.encrypt(vector)
+encrypted = sdk.vectax.encrypt(vector)
 
 # Decrypt when needed
-decrypted = sdk.vector.decrypt(encrypted)
+decrypted = sdk.vectax.decrypt(encrypted)
 ```
 </CodeGroup>
 
@@ -193,7 +193,7 @@ vector = VectorData(
     vector=embedding,
     id="feedback_1"
 )
-encrypted = sdk.vector.encrypt(vector)
+encrypted = sdk.vectax.encrypt(vector)
 
 # 3. Set access controls
 policy = {

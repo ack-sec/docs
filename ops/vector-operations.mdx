@@ -28,7 +28,7 @@ vector_data = VectorData(
 Encrypt a vector while preserving similarity.
 
 ```python
-encrypted = sdk.vector.encrypt(vector_data)
+encrypted = sdk.vectax.encrypt(vector_data)
 ```
 
 #### Parameters
@@ -47,7 +47,7 @@ encrypted = sdk.vector.encrypt(vector_data)
 Decrypt an encrypted vector.
 
 ```python
-decrypted = sdk.vector.decrypt(encrypted_vector)
+decrypted = sdk.vectax.decrypt(encrypted_vector)
 ```
 
 ### batch_encrypt()
@@ -58,7 +58,7 @@ vectors = [
     VectorData(vector=v, id=f"vec_{i}")
     for i, v in enumerate(vectors)
 ]
-encrypted_vectors = sdk.vector.batch_encrypt(vectors)
+encrypted_vectors = sdk.vectax.batch_encrypt(vectors)
 ```
 
 ### Example: Complete Vector Operation Flow
@@ -73,7 +73,7 @@ data = VectorData(
 )
 
 # 2. Encrypt vector
-encrypted = sdk.vector.encrypt(data)
+encrypted = sdk.vectax.encrypt(data)
 
 # 3. Store encrypted vector
 # (Using ChromaDB as example)
@@ -87,5 +87,5 @@ collection.add(
 )
 
 # 4. Later: Decrypt vector
-decrypted = sdk.vector.decrypt(encrypted)
+decrypted = sdk.vectax.decrypt(encrypted)
 ```

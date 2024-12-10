@@ -46,7 +46,7 @@ class VectorFlow:
         )
 
         # 2. Encryption
-        encrypted = self.sdk.vector.encrypt(vector_data)
+        encrypted = self.sdk.vectax.encrypt(vector_data)
 
         # 3. Store/Transfer
         store_result = self.store_encrypted_vector(encrypted)
@@ -58,7 +58,7 @@ class VectorFlow:
         encrypted = self.get_stored_vector(vector_id)
 
         # 2. Decrypt
-        decrypted = self.sdk.vector.decrypt(encrypted)
+        decrypted = self.sdk.vectax.decrypt(encrypted)
 
         return decrypted.vector
 ```
@@ -104,7 +104,7 @@ class SecureSearchFlow:
                 vector=embedding,
                 id=doc.id
             )
-            encrypted = self.sdk.vector.encrypt(vector_data)
+            encrypted = self.sdk.vectax.encrypt(vector_data)
             encrypted_docs.append(encrypted)
 
         # Store in vector database
@@ -127,7 +127,7 @@ class SecureSearchFlow:
             vector=query_embedding,
             id="query"
         )
-        encrypted_query = self.sdk.vector.encrypt(query_data)
+        encrypted_query = self.sdk.vectax.encrypt(query_data)
 
         # Perform search
         results = self.collection.query(
