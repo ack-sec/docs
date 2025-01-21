@@ -53,7 +53,17 @@
         "architecture/usecases",
         "architecture/benchmarks"
       ]
-    }
+    },
+        {
+          "group": "API Reference",
+          "pages": [
+            "ops/sdk-configuration",
+            "ops/vector-operations",
+            "ops/rbac-operations",
+            "ops/fpe-operations",
+            "ops/prompt-operations"
+          ]
+        }
   ],
   "footerSocials": {
     "linkedin": "https://www.linkedin.com/company/mirrorsecurity",
