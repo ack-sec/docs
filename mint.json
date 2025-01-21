@@ -63,7 +63,14 @@
             "ops/fpe-operations",
             "ops/prompt-operations"
           ]
-        }
+        },
+          
+            {
+              "group": "Integrations",
+              "pages": [
+                "integrations/VectorDB"
+              ]
+            }
   ],
   "footerSocials": {
     "linkedin": "https://www.linkedin.com/company/mirrorsecurity",
