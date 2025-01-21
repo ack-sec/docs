@@ -64,13 +64,13 @@
             "ops/prompt-operations"
           ]
         },
-          
-            {
-              "group": "Integrations",
-              "pages": [
-                "integrations/VectorDB"
-              ]
-            }
+     {
+      "group": "Integrations",
+      "pages": [
+        "integrations/VectorDB"
+      ]
+    },
+    
   ],
   "footerSocials": {
     "linkedin": "https://www.linkedin.com/company/mirrorsecurity",
