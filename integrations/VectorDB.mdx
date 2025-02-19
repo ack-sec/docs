@@ -419,271 +419,184 @@ class RBACWeaviate:
 ## Qdrant with RBAC
 
 ```python
-import logging
-import json
-from typing import List
-from dataclasses import dataclass
 from qdrant_client import QdrantClient
 from qdrant_client.models import PointStruct, models, VectorParams
-from openai import OpenAI
 from mirror_sdk.core.mirror_core import MirrorSDK, MirrorConfig
 from mirror_sdk.core.models import RBACVectorData, MirrorCrypto
 from mirror_sdk.core import MirrorError
 from mirror_sdk.utils import encode_binary_data, decode_binary_data
-
-# Setup logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Define user context structure
-@dataclass
-class UserContext:
-    roles: List[str]
-    groups: List[str]
-    departments: List[str]
 
-# Get embeddings
-def get_embedding(text: str) -> List[float]:
-        """Get embedding from OpenAI API."""
-        return (
-            openai_client.embeddings.create(input=[text], model="text-embedding-ada-002-2")
-            .data[0]
-            .embedding
+class RBACQdrant:
+    def __init__(self, mirror_sdk, client):
+        self.sdk = mirror_sdk
+        self.client = client
+
+    # Upsert vectors with RBAC policies
+    # vectors is array of dictionaries with "embedding" and "id" fields
+    # auth_policy is a dictionary which contains RBAC for uploaded documents
+    def upsert_with_rbac(self, vectors, auth_policy, collection_name):
+        """Upsert vectors with RBAC policies"""
+        for index, vec in enumerate(vectors):
+
+            vector_data = RBACVectorData(
+                vector=vec["embedding"],
+                id=index+1,
+                access_policy=auth_policy
+            )
+            encrypted = self.sdk.rbac.encrypt(vector_data)
+
+            # Store in Qdrant
+            self.client.upsert(
+                collection_name=collection_name,
+                points=[
+                    models.PointStruct(
+                        id=index+1,
+                        vector=encrypted.crypto.ciphertext,
+                        payload={
+                            "doc_id": index+1,
+                            "content": vec["content"],
+                            "encrypted_header": encrypted.encrypted_header,
+                            "encrypted_vector_metadata": encode_binary_data(
+                                encrypted.crypto.serialize()
+                            ),
+                        },
+                    )
+                ],
+            )
+            logger.info(f"Successfully stored document {vec['id']}")
+
+    # Query method with RBAC access verification
+    # search_policy contains RBAC for search
+    # user_secret_key is the secret key for the user
+    def query_with_rbac(self, query_vector, search_policy, user_secret_key, collection_name, top_k=5):
+        """Query with RBAC access verification"""
+        query_data = RBACVectorData(
+            vector=query_vector,
+            id="query",
+            access_policy=search_policy
         )
 
-# RBAC Implementation
-def setup_rbac_collection(collection_name="rbac_demo"):
-    """Create a new collection for RBAC testing"""
-    dim_size = 1536  # Size of embeddings from text-embedding-3-small
-    try:
-        qdrant_client.create_collection(
-            collection_name,
-            vectors_config=VectorParams(size=dim_size, distance=models.Distance.COSINE),
+        # Encrypt query with user's policy
+        query_data = RBACVectorData(
+            vector=query_vector,
+            id="query",
+            access_policy=search_policy
         )
-        logger.info(f"Created new collection: {collection_name}")
-    except Exception as e:
-        logger.info(f"Collection may already exist: {e}")
-    return collection_name
+        encrypted_query = self.sdk.rbac.encrypt(query_data)
 
-def setup_rbac_policies():
-    """Define RBAC policies and user contexts"""
-    # Overall application access policy
-    access_policy = {
-        "roles": ["investment_analyst", "trader"],
-        "groups": ["internal_staff", "external_staff"],
-        "departments": ["wealth_management", "research"],
-    }
+        results = self.client.search(
+            collection_name=collection_name,
+            query_vector=encrypted_query.crypto.ciphertext,
+            limit=5
+        )
 
-    # Define different user contexts
-    user_contexts = {
-        "authorized_investment_analyst": UserContext(
-            roles=["investment_analyst"],
-            groups=["internal_staff"],
-            departments=["wealth_management"],
-        ),
-        "unauthorized_user": UserContext(
-            roles=["trader"],
-            groups=["external_staff"],
-            departments=["research"]
-        ),
-    }
+        accessible_results = []
+        for result in results:
+            try:
+                doc_id = result.payload["doc_id"]
+
+                # Get complete document from Qdrant
+                qdrant_doc = qdrant_client.retrieve(
+                    collection_name=collection_name,
+                    ids=[doc_id],
+                )[0]
+
+                # Extract crypto metadata
+                encrypted_vector_metadata = decode_binary_data(
+                    qdrant_doc.payload["encrypted_vector_metadata"]
+                )
+                mirror_data = MirrorCrypto.deserialize(
+                    encrypted_vector_metadata)
+
+                # Try to decrypt with user's key - will fail if unauthorized
+                try:
+                    decrypted_result = sdk.rbac.decrypt(
+                        crypto=mirror_data,
+                        encrypted_header=qdrant_doc.payload["encrypted_header"],
+                        user_secret_key=user_secret_key,
+                    )
+                    # Access granted
+                    accessible_results.append({
+                        "id": doc_id,
+                        "content": qdrant_doc.payload["content"],
+                        "score": result.score,
+                        "access": "granted"
+                    })
+                    logger.info(f"Access granted for document {doc_id}")
+                except MirrorError:
+                    # Access denied
+                    logger.info(f"Access denied for document {doc_id}")
+                    accessible_results.append({
+                        "id": doc_id,
+                        "content": "[ACCESS DENIED]",
+                        "score": result.score,
+                        "access": "denied"
+                    })
+
+            except Exception as e:
+                logger.error(f"Error processing document {doc_id}: {str(e)}")
+
+        return accessible_results
+
+
+def generate_vectors(docs):
+    """Generate embeddings for the given documents."""
+    vectors = []
+    for index, doc in enumerate(docs):
+        vectors.append({
+            "id": index,
+            "embedding": get_embedding(doc["content"])
+        })
+    return vectors
+
+def rbac_demo():
+    # Add your documents here, each document contains "id" and "content" field
+    documents = []
 
     # Set overall policy for app
     sdk.set_policy(access_policy)
+    
+    collection_name = "rbac_demo"
 
-    return access_policy, user_contexts
+    # Create Collection in Qdrant with name `rbac_demo`, use Qdrant client to create collection
 
-def generate_user_keys(user_contexts):
-    """Generate encryption keys for different user contexts"""
-    user_keys = {}
-
-    for user_type, context in user_contexts.items():
-        policy = {
-            "roles": context.roles,
-            "groups": context.groups,
-            "departments": context.departments,
+    # Define authorized and unauthorized user contexts
+    auth_user_context = {
+            "roles": ["researcher"],
+            "groups": ["research"],
+            "departments": ["ai", "platform"],
         }
-        user_keys[user_type] = sdk.rbac.generate_user_secret_key(policy)
-
-    return user_keys
-
-def encrypt_and_store_documents(documents, collection_name, auth_policy):
-    """Encrypt documents with RBAC and store in Qdrant"""
-    for index, document in enumerate(documents):
-        logger.info(f"Processing document {document['id']}")
-        embeddings = get_embedding(document["content"])
-
-        # Create RBAC vector data with access policy
-        vector_data = RBACVectorData(
-            vector=embeddings,
-            id=index+1,
-            access_policy=auth_policy,
-        )
-
-        # Encrypt with RBAC
-        encrypted = sdk.rbac.encrypt(vector_data)
-
-        # Store in Qdrant
-        qdrant_client.upsert(
-            collection_name=collection_name,
-            points=[
-                models.PointStruct(
-                    id=index,
-                    vector=encrypted.crypto.ciphertext,
-                    payload={
-                        "doc_id": index,
-                        "content": document["content"],
-                        "encrypted_header": encrypted.encrypted_header,
-                        "encrypted_vector_metadata": encode_binary_data(
-                            encrypted.crypto.serialize()
-                        ),
-                    },
-                )
-            ],
-        )
-        logger.info(f"Successfully stored document {document['id']}")
-
-def search_with_rbac(query_text, collection_name, user_context, user_secret_key):
-    """Perform a search with RBAC validation"""
-    logger.info(f"Searching with user context: {user_context}")
-
-    # Get query embeddings
-    query_vector = get_embedding(query_text)
-
-    # Create policy from user context
-    search_policy = {
-        "roles": user_context.roles,
-        "groups": user_context.groups,
-        "departments": user_context.departments,
+    unauth_user_context = {
+        "roles": ["reader"],
+        "groups": ["research"],
+        "departments": ["ai", "platform"],
     }
 
-    # Encrypt query with user's policy
-    query_data = RBACVectorData(
-        vector=query_vector,
-        id="query",
-        access_policy=search_policy
-    )
-    encrypted_query = sdk.rbac.encrypt(query_data)
+    # Create user keys for authorized policy and unauthorized policy
+    authorized_user_key = sdk.rbac.generate_user_secret_key(auth_user_context)
+    unauthorized_user_key = sdk.rbac.generate_user_secret_key(unauth_user_context)
 
-    # Search in Qdrant
-    results = qdrant_client.search(
-        collection_name=collection_name,
-        query_vector=encrypted_query.crypto.ciphertext,
-        limit=5
-    )
+    rbac = RBACQdrant(sdk, qdrant_client)
 
-    accessible_results = []
-    for result in results:
-        try:
-            doc_id = result.payload["doc_id"]
+    # Generate Vectors array, each element containing id and embedding field
+    vectors = generate_vectors(documents)
 
-            # Get complete document from Qdrant
-            qdrant_doc = qdrant_client.retrieve(
-                collection_name=collection_name,
-                ids=[doc_id],
-            )[0]
+    # Upsert documents with RBAC auth_policy
+    rbac.upsert_with_rbac(vectors, auth_user_context, collection_name)
 
-            # Extract crypto metadata
-            encrypted_vector_metadata = decode_binary_data(
-                qdrant_doc.payload["encrypted_vector_metadata"]
-            )
-            mirror_data = MirrorCrypto.deserialize(encrypted_vector_metadata)
-
-            # Try to decrypt with user's key - will fail if unauthorized
-            try:
-                decrypted_result = sdk.rbac.decrypt(
-                    crypto=mirror_data,
-                    encrypted_header=qdrant_doc.payload["encrypted_header"],
-                    user_secret_key=user_secret_key,
-                )
-                # Access granted
-                accessible_results.append({
-                    "id": doc_id,
-                    "content": qdrant_doc.payload["content"],
-                    "score": result.score,
-                    "access": "granted"
-                })
-                logger.info(f"Access granted for document {doc_id}")
-            except MirrorError:
-                # Access denied
-                logger.info(f"Access denied for document {doc_id}")
-                accessible_results.append({
-                    "id": doc_id,
-                    "content": "[ACCESS DENIED]",
-                    "score": result.score,
-                    "access": "denied"
-                })
-
-        except Exception as e:
-            logger.error(f"Error processing document {doc_id}: {str(e)}")
-
-    return accessible_results
-
-# Demo RBAC functionality
-def run_rbac_demo():
-    # Sample documents
-    documents = [
-        {
-            "id": "doc0",
-            "content": "Confidential investment strategy for wealth management clients.",
-        },
-        {
-            "id": "doc1",
-            "content": "Quarterly financial report for internal staff review.",
-        },
-        {
-            "id": "doc2",
-            "content": "Public market research available to all departments.",
-        },
-        {
-            "id": "doc3",
-            "content": "Trading algorithms restricted to authorized analysts.",
-        }
-    ]
-
-    # Setup
-    collection_name = setup_rbac_collection("rbac_demo")
-    access_policy, user_contexts = setup_rbac_policies()
-    user_keys = generate_user_keys(user_contexts)
-
-    # Get policy for authorized user
-    auth_user = user_contexts['authorized_investment_analyst']
-    auth_policy = {
-        "roles": auth_user.roles,
-        "groups": auth_user.groups,
-        "departments": auth_user.departments,
-    }
-
-    # Store documents with RBAC
-    encrypt_and_store_documents(documents, collection_name, auth_policy)
-
-    # Demonstrate search with different user contexts
     search_query = "investment strategy"
+    query_vector = get_embedding(search_query)
 
-    # 1. Search as authorized user
-    auth_results = search_with_rbac(
-        search_query,
-        collection_name,
-        user_contexts['authorized_investment_analyst'],
-        user_keys['authorized_investment_analyst']
-    )
+    # search with authorized key
+    search_results = rbac.query_with_rbac(
+        query_vector, auth_user_context, authorized_user_key, collection_name, top_k=5)
+    print(search_results)
 
-    # 2. Search as unauthorized user
-    unauth_results = search_with_rbac(
-        search_query,
-        collection_name,
-        user_contexts['unauthorized_user'],
-        user_keys['unauthorized_user']
-    )
+    # search with unauthorized key
+    search_results = rbac.query_with_rbac(
+        query_vector, unauth_user_context, unauthorized_user_key, collection_name, top_k=5)
+    print(search_results)
 
-    # Print results
-    logger.info("\n--- Authorized User Search Results ---")
-    for result in auth_results:
-        logger.info(f"Document {result['id']}: {result['content']} (Score: {result['score']}, Access: {result['access']})")
-
-    logger.info("\n--- Unauthorized User Search Results ---")
-    for result in unauth_results:
-        logger.info(f"Document {result['id']}: {result['content']} (Score: {result['score']}, Access: {result['access']})")
-
-run_rbac_demo()
 ```
