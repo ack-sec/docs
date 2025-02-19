@@ -251,6 +251,174 @@ results = client.search(
 ## Common RBAC Configuration
 
 ```python
+from mirror_sdk.core.models import RBACVectorData
+
+# Define organization policies
+app_policy = {
+    "roles": ["admin", "researcher", "analyst", "reader"],
+    "groups": ["research", "engineering", "product", "compliance"],
+    "departments": ["ai", "platform", "security"]
+}
+
+# Initialize SDK with policy
+sdk.set_policy(app_policy)
+```
+
+
+## ChromaDB with RBAC
+
+```python
+class RBACChromaDB:
+    def __init__(self, mirror_sdk, collection):
+        self.sdk = mirror_sdk
+        self.collection = collection
+
+    def store_with_rbac(self, embedding, content, access_policy):
+        """Store vector with RBAC protection"""
+        # Create RBAC vector data
+        vector_data = RBACVectorData(
+            vector=embedding,
+            id=f"doc_{hash(content)}",
+            access_policy=access_policy
+        )
+
+        # Encrypt with RBAC
+        encrypted = self.sdk.rbac.encrypt(vector_data)
+
+        # Store with RBAC metadata
+        self.collection.add(
+            ids=[vector_data.id],
+            embeddings=[encrypted.crypto.ciphertext],
+            documents=[content],
+            metadatas=[{
+                "encrypted_header": encrypted.encrypted_header,
+                "access_policy": access_policy
+            }]
+        )
+
+    def search_with_rbac(self, query_embedding, user_key):
+        """Search with RBAC verification"""
+        # Encrypt query
+        query_data = RBACVectorData(
+            vector=query_embedding,
+            id="query",
+            access_policy={}  # Query doesn't need policy
+        )
+        encrypted_query = self.sdk.rbac.encrypt(query_data)
+
+        # Search
+        results = self.collection.query(
+            query_embeddings=[encrypted_query.crypto.ciphertext],
+            n_results=5
+        )
+
+        # Verify access and decrypt
+        accessible_docs = []
+        for doc, metadata in zip(results["documents"][0], results["metadatas"][0]):
+            try:
+                self.sdk.rbac.decrypt(
+                    metadata["encrypted_vector"],
+                    metadata["encrypted_header"],
+                    user_key
+                )
+                accessible_docs.append(doc)
+            except Exception:
+                continue
+
+        return accessible_docs
+```
+
+## Pinecone with RBAC
+
+```python
+class RBACPinecone:
+    def __init__(self, mirror_sdk, index):
+        self.sdk = mirror_sdk
+        self.index = index
+
+    def upsert_with_rbac(self, vectors, access_policies):
+        """Upsert vectors with RBAC policies"""
+        records = []
+        for vec, policy in zip(vectors, access_policies):
+            vector_data = RBACVectorData(
+                vector=vec["embedding"],
+                id=vec["id"],
+                access_policy=policy
+            )
+            encrypted = self.sdk.rbac.encrypt(vector_data)
+
+            records.append((
+                vec["id"],
+                encrypted.crypto.ciphertext,
+                {
+                    "encrypted_header": encrypted.encrypted_header,
+                    "access_policy": policy,
+                    **vec.get("metadata", {})
+                }
+            ))
+
+        self.index.upsert(records)
+
+    def query_with_rbac(self, query_vector, user_key, top_k=5):
+        """Query with RBAC access verification"""
+        query_data = RBACVectorData(
+            vector=query_vector,
+            id="query"
+        )
+        encrypted_query = self.sdk.rbac.encrypt(query_data)
+
+        results = self.index.query(
+            vector=encrypted_query.crypto.ciphertext,
+            top_k=top_k,
+            include_metadata=True
+        )
+
+        verified_results = []
+        for match in results.matches:
+            try:
+                self.sdk.rbac.decrypt(
+                    match.metadata["encrypted_vector"],
+                    match.metadata["encrypted_header"],
+                    user_key
+                )
+                verified_results.append(match)
+            except Exception:
+                continue
+
+        return verified_results
+```
+
+## Weaviate with RBAC
+
+```python
+class RBACWeaviate:
+    def __init__(self, mirror_sdk, client):
+        self.sdk = mirror_sdk
+        self.client = client
+
+    def add_with_rbac(self, object_data, access_policy):
+        """Add object with RBAC protection"""
+        vector_data = RBACVectorData(
+            vector=object_data["vector"],
+            id=object_data["id"],
+            access_policy=access_policy
+        )
+        encrypted = self.sdk.rbac.encrypt(vector_data)
+
+        self.client.data_object.create(
+            class_name="SecureDocument",
+            data_object={
+                "content": object_data["content"],
+                "encrypted_header": encrypted.encrypted_header,
+                "access_policy": access_policy
+            },
+            vector=encrypted.crypto.ciphertext
+        )
+```
+
+## Qdrant with RBAC
+
+```python
 import logging
 import json
 from typing import List
@@ -518,155 +686,4 @@ def run_rbac_demo():
         logger.info(f"Document {result['id']}: {result['content']} (Score: {result['score']}, Access: {result['access']})")
 
 run_rbac_demo()
-```
-
-## ChromaDB with RBAC
-
-```python
-class RBACChromaDB:
-    def __init__(self, mirror_sdk, collection):
-        self.sdk = mirror_sdk
-        self.collection = collection
-
-    def store_with_rbac(self, embedding, content, access_policy):
-        """Store vector with RBAC protection"""
-        # Create RBAC vector data
-        vector_data = RBACVectorData(
-            vector=embedding,
-            id=f"doc_{hash(content)}",
-            access_policy=access_policy
-        )
-
-        # Encrypt with RBAC
-        encrypted = self.sdk.rbac.encrypt(vector_data)
-
-        # Store with RBAC metadata
-        self.collection.add(
-            ids=[vector_data.id],
-            embeddings=[encrypted.crypto.ciphertext],
-            documents=[content],
-            metadatas=[{
-                "encrypted_header": encrypted.encrypted_header,
-                "access_policy": access_policy
-            }]
-        )
-
-    def search_with_rbac(self, query_embedding, user_key):
-        """Search with RBAC verification"""
-        # Encrypt query
-        query_data = RBACVectorData(
-            vector=query_embedding,
-            id="query",
-            access_policy={}  # Query doesn't need policy
-        )
-        encrypted_query = self.sdk.rbac.encrypt(query_data)
-
-        # Search
-        results = self.collection.query(
-            query_embeddings=[encrypted_query.crypto.ciphertext],
-            n_results=5
-        )
-
-        # Verify access and decrypt
-        accessible_docs = []
-        for doc, metadata in zip(results["documents"][0], results["metadatas"][0]):
-            try:
-                self.sdk.rbac.decrypt(
-                    metadata["encrypted_vector"],
-                    metadata["encrypted_header"],
-                    user_key
-                )
-                accessible_docs.append(doc)
-            except Exception:
-                continue
-
-        return accessible_docs
-```
-
-## Pinecone with RBAC
-
-```python
-class RBACPinecone:
-    def __init__(self, mirror_sdk, index):
-        self.sdk = mirror_sdk
-        self.index = index
-
-    def upsert_with_rbac(self, vectors, access_policies):
-        """Upsert vectors with RBAC policies"""
-        records = []
-        for vec, policy in zip(vectors, access_policies):
-            vector_data = RBACVectorData(
-                vector=vec["embedding"],
-                id=vec["id"],
-                access_policy=policy
-            )
-            encrypted = self.sdk.rbac.encrypt(vector_data)
-
-            records.append((
-                vec["id"],
-                encrypted.crypto.ciphertext,
-                {
-                    "encrypted_header": encrypted.encrypted_header,
-                    "access_policy": policy,
-                    **vec.get("metadata", {})
-                }
-            ))
-
-        self.index.upsert(records)
-
-    def query_with_rbac(self, query_vector, user_key, top_k=5):
-        """Query with RBAC access verification"""
-        query_data = RBACVectorData(
-            vector=query_vector,
-            id="query"
-        )
-        encrypted_query = self.sdk.rbac.encrypt(query_data)
-
-        results = self.index.query(
-            vector=encrypted_query.crypto.ciphertext,
-            top_k=top_k,
-            include_metadata=True
-        )
-
-        verified_results = []
-        for match in results.matches:
-            try:
-                self.sdk.rbac.decrypt(
-                    match.metadata["encrypted_vector"],
-                    match.metadata["encrypted_header"],
-                    user_key
-                )
-                verified_results.append(match)
-            except Exception:
-                continue
-
-        return verified_results
-```
-
-## Weaviate with RBAC
-
-```python
-class RBACWeaviate:
-    def __init__(self, mirror_sdk, client):
-        self.sdk = mirror_sdk
-        self.client = client
-
-    def add_with_rbac(self, object_data, access_policy):
-        """Add object with RBAC protection"""
-        vector_data = RBACVectorData(
-            vector=object_data["vector"],
-            id=object_data["id"],
-            access_policy=access_policy
-        )
-        encrypted = self.sdk.rbac.encrypt(vector_data)
-
-        self.client.data_object.create(
-            class_name="SecureDocument",
-            data_object={
-                "content": object_data["content"],
-                "encrypted_header": encrypted.encrypted_header,
-                "access_policy": access_policy
-            },
-            vector=encrypted.crypto.ciphertext
-        )
 ```
