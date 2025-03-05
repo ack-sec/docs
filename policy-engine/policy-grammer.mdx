@@ -1,0 +1,369 @@
+---
+title: 'Policy Grammar'
+description: 'The declarative language for defining AgentIQ policies'
+---
+
+# AgentIQ Policy Grammar
+
+AgentIQ policies are defined using a declarative, easy-to-understand grammar that allows you to express complex security and governance rules.
+
+## Policy Structure
+
+A basic policy follows this structure:
+
+```python
+@version "1.0.0";
+@author "Security Team";
+@last_modified "2024-01-20";
+
+metadata {
+  description: "Security policy for production";
+  severity: HIGH;
+  category: "Data Protection";
+}
+
+policy my_policy_name {
+    // Policy statements go here
+    allow message where true;
+    deny message where contains(result, "sensitive_data");
+}
+```
+
+Each policy contains:
+- **Metadata**: Version information, authorship, and other metadata
+- **Policy Block**: Named container for policy rules and statements
+- **Rules**: Allow/deny statements that define what's permitted or prohibited
+
+## Rule Types
+
+AgentIQ supports various rule types for different protection scenarios:
+
+### Basic Allow/Deny Rules
+
+The foundation of policies - determine if an operation should be allowed or blocked:
+
+```python
+allow message where true;                            // Allow by default
+deny message where contains(result, "credit_card");  // Block specific content
+```
+
+### Resource Types
+
+Rules target specific resource types:
+
+```python
+allow message input where true;                  // Allow user inputs
+deny message output where length(result) > 1000; // Deny long responses
+allow tool_call where is_approved_tool(name);    // Only allow approved tools
+deny response where detect_pii(content);         // Prevent PII leaks
+```
+
+All available resources include:
+- `message`: User messages or AI responses (with optional `input`/`output` subtype)
+- `tool_call`: External tool invocations
+- `tool_output`: Results from external tools
+- `trace`: Execution traces
+- `prompt`: AI system prompts
+- `response`: AI-generated responses
+- `model`: AI model operations
+- `rag`: Retrieval augmented generation operations
+- `retrieval`: Data retrieval operations
+- `embedding`: Vector embedding operations
+- `key`: Encryption key operations
+
+## Expressions
+
+Rules use expressions to define conditions:
+
+### Logical Operators
+
+```python
+allow message where is_safe(content) && !contains_pii(content);
+deny response where contains(result, "password") || contains(result, "ssn");
+```
+
+Supported operators: `&&` (and), `||` (or), `!` (not)
+
+### Comparison Operators
+
+```python
+deny message where length(content) > 1000;
+allow response where safety_score >= 0.95;
+```
+
+Supported operators: `==`, `!=`, `>`, `>=`, `<`, `<=`
+
+### Built-in Functions
+
+The grammar includes many built-in functions for security analysis and content processing:
+
+#### Common Functions
+
+```python
+length(value)                // Returns the length of a string or array
+contains(value, substring)   // Checks if a value contains a substring
+starts_with(value, prefix)   // Checks if a string starts with the prefix
+ends_with(value, suffix)     // Checks if a string ends with the suffix
+match(value, pattern)        // Regular expression matching
+```
+
+#### Security Functions
+
+```python
+detect_pii(content)               // Detects personal identifiable information
+check_sensitive_data(content)     // Checks for any sensitive data
+check_rag_authenticity(sources)   // Verifies RAG sources are authentic
+check_prompt_injection(input)     // Detects prompt injection attempts
+detect_jailbreak(content)         // Identifies jailbreak attempts
+verify_response_coherence(resp)   // Ensures response is coherent with prompt
+```
+
+#### Advanced Functions
+
+```python
+all(array, condition)      // Checks if all items satisfy a condition
+any(array, condition)      // Checks if any item satisfies a condition
+filter(array, condition)   // Filters array based on condition
+map(array, transform)      // Transforms each item in the array
+```
+
+## Advanced Policy Features
+
+### Specialized Rule Types
+
+AgentIQ provides specialized rules for common protection scenarios:
+
+#### RAG Security Rules
+
+```python
+// Verify source authenticity in RAG
+check_rag source_verification with { 
+  threshold: 0.8, 
+  require_validation: true 
+};
+
+// Detect tampering with retrieved content
+check_rag retrieval_tampering with {
+  detection_level: "strict" 
+};
+
+// Prevent context manipulation
+check_rag context_manipulation with {
+  max_embedding_distance: 0.2
+};
+
+// Detail validation requirements
+validate_retrieval {
+  source_authenticity;     // Verify source credibility
+  content_relevance;       // Ensure content is relevant to query
+  vector_consistency;      // Check vector embedding consistency
+  chunk_integrity;         // Verify chunks haven't been modified
+  embedding_similarity;    // Ensure embeddings are semantically similar
+  semantic_drift;          // Prevent semantic meaning shifts
+}
+```
+
+#### Prompt Security Rules
+
+```python
+// Detect and prevent prompt injection attacks
+check_prompt injection with { 
+  strict_mode: true, 
+  patterns: ["system:", "ignore previous"] 
+};
+
+// Detect attempted jailbreaks
+check_prompt jailbreak with {
+  detection_threshold: 0.9
+};
+
+// Protect against indirect injection through misdirection
+check_prompt indirect_injection with {
+  recursive_check: true
+};
+
+// Prevent unicode manipulation attacks
+check_prompt unicode_abuse with {
+  normalize: true
+};
+
+// Other available checks:
+// - manipulation
+// - bypass
+// - template_injection
+// - context_leak
+// - system_prompt_leak
+// - prompt_injection
+// - instruction_injection
+```
+
+#### Output Validation Rules
+
+```python
+// Detect hallucinated content
+check_output hallucination with {
+  threshold: 0.9,
+  check_sources: true
+};
+
+// Measure output toxicity
+check_output toxicity with {
+  max_score: 0.3
+};
+
+// Detect potential bias in responses
+check_output bias with {
+  categories: ["gender", "race", "age"],
+  threshold: 0.2
+};
+
+// Check factual consistency
+check_output factual_consistency with {
+  verification_level: "high",
+  sources_required: true
+};
+
+// Other available checks:
+// - pii
+// - sensitive_data
+// - code_injection
+// - prompt_reflection
+// - indirect_response
+```
+
+#### Model Behavior Rules
+
+```python
+// Ensure model follows instructions
+check_model instruction_adherence with {
+  min_compliance: 0.95,
+  strict_mode: true
+};
+
+// Detect unexpected personality changes
+check_model personality_drift with {
+  baseline: "friendly_assistant",
+  drift_threshold: 0.2
+};
+
+// Verify consistent output style
+check_model style_consistency with {
+  baseline_style: "professional",
+  max_deviation: 0.3
+};
+
+// Ensure model doesn't leak private data
+check_model data_leakage with {
+  sensitivity: "high"
+};
+
+// Other available checks:
+// - output_consistency
+// - safety_boundary
+// - response_coherence
+// - resource_coherence
+```
+
+#### Token Rules
+
+```python
+// Check token distribution patterns
+check_tokens distribution with {
+  pattern: "normal",
+  max_deviation: 0.4
+};
+
+// Verify entropy levels to detect attacks
+check_tokens entropy with {
+  min_entropy: 2.5,
+  max_entropy: 8.0
+};
+```
+
+
+### Conditional Policies
+
+Execute different policies based on conditions:
+
+```python
+if user.role == "admin" then {
+  policy admin_policy {
+    allow message where true;
+  }
+} else {
+  policy regular_user_policy {
+    deny message where contains(content, "admin");
+  }
+}
+```
+
+### Chained Policies
+
+Combine multiple policies in sequence:
+
+```python
+chain sensitive_data_policy {
+  policy pii_detection {
+    deny message where detect_pii(content);
+  }
+  
+  policy token_validation {
+    deny message where contains_secrets(content);
+  }
+}
+```
+
+## Complete Example
+
+Here's a complete example policy for an email assistant application:
+
+```python
+@version "1.0.0";
+@author "Security Team";
+@last_modified "2024-02-15";
+
+metadata {
+  description: "Email assistant protection policy";
+  severity: HIGH;
+  category: "Data Protection";
+}
+
+policy email_assistant_policy {
+  // Prevent PII leakage
+  deny response where detect_pii(content);
+  
+  // Enforce email domain restrictions
+  deny message where is_external_email(to);
+  
+  // Check for sensitive content
+  check_output sensitive_data with {
+    categories: ["financial", "medical", "personal"]
+  };
+  
+  // Verify RAG retrieval authenticity
+  check_rag source_verification;
+  
+  // Prevent prompt injection
+  check_prompt injection with { strict_mode: true };
+  
+  // Detect hallucination in responses
+  check_output hallucination with {
+    threshold: 0.8,
+    action: "warn"
+  };
+  
+  // Ensure model stays within boundaries
+  check_model safety_boundary with {
+    profile: "email_assistant"
+  };
+  
+  // Allow everything else
+  allow message where true;
+}
+```
+
+## Next Steps
+
+- [Creating Policies](/policy-engine/creating-policies) - Write your first policy
+- [Policy Examples](/policy-engine/policy-examples/email-assistant) - See real-world examples
+- [Policy Functions](/api-reference/functions/security-functions) - Explore all available policy functions

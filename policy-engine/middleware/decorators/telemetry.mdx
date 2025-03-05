@@ -1,0 +1,257 @@
+---
+title: 'Telemetry Decorator'
+description: 'Add monitoring, logging, and analytics to your AI functions'
+---
+
+The `@monitor` decorator adds comprehensive telemetry capabilities to your functions, allowing you to track performance, usage patterns, and potential issues.
+
+## Basic Usage
+
+```python
+from mirror_sdk.telemetry.tracing.decorators import monitor
+
+@monitor(name="generate_content")
+async def generate_content(prompt: str) -> str:
+    # Your function implementation
+    return result
+```
+
+## How It Works
+
+The monitor decorator:
+
+1. Creates a span for the function execution
+2. Records start time and input parameters
+3. Executes the function
+4. Records completion time and result
+5. Captures any errors or exceptions
+6. Reports telemetry data to the configured backend
+
+<Frame>
+  ![Telemetry Monitoring Flow](/images/telemetry-flow.png)
+</Frame>
+
+## Configuration Options
+
+<ResponseField name="name" type="string" required>
+  Name for the monitoring span. Used for identifying the operation in telemetry data.
+</ResponseField>
+
+<ResponseField name="session_id" type="string">
+  Identifier for the current session. Useful for grouping related operations.
+</ResponseField>
+
+<ResponseField name="tags" type="Dict[str, Any]">
+  Custom key-value pairs to include in telemetry data.
+</ResponseField>
+
+<ResponseField name="mirror_config" type="MirrorConfig">
+  SDK configuration. Defaults to loading from environment variables.
+</ResponseField>
+
+<ResponseField name="capture_args" type="bool">
+  Whether to capture function arguments in telemetry. Default: True
+</ResponseField>
+
+<ResponseField name="capture_result" type="bool">
+  Whether to capture function results in telemetry. Default: True
+</ResponseField>
+
+<ResponseField name="sanitize_pii" type="bool">
+  Whether to automatically detect and redact PII. Default: True
+</ResponseField>
+
+## Telemetry Data Collection
+
+The decorator collects various data points:
+
+### Standard Metrics
+
+- **Duration**: Time taken for the function to execute
+- **Status**: Success or failure of the operation
+- **Timestamp**: When the operation occurred
+- **Resource Usage**: CPU, memory, and other resource metrics
+
+### AI-Specific Metrics
+
+- **Token Usage**: Input and output token counts
+- **Model Information**: Model name, version, and configuration
+- **Completion Details**: Temperature, top_p, and other generation parameters
+
+### Custom Metrics
+
+You can add custom tags to track specialized metrics:
+
+```python
+@monitor(
+    name="content_generation",
+    tags={
+        "model": "gpt-4o",
+        "content_type": "blog_post",
+        "user_tier": "premium",
+        "feature_flags": {"beta_features": True}
+    }
+)
+async def generate_content(prompt: str) -> str:
+    # Your function implementation
+```
+
+## PII Handling
+
+By default, the telemetry system automatically detects and redacts personally identifiable information (PII) from logs and traces to ensure privacy compliance:
+
+```python
+# PII will be automatically detected and redacted
+@monitor(name="process_user_data", sanitize_pii=True)
+async def process_user_data(user_data: Dict[str, Any]) -> str:
+    # Process user data
+    return result
+```
+
+This ensures that sensitive information like emails, phone numbers, and credit card numbers isn't logged in your telemetry data.
+
+## Error Handling
+
+The monitor decorator captures exceptions and includes them in telemetry:
+
+```python
+@monitor(name="risky_operation")
+async def risky_operation(data: Dict[str, Any]) -> str:
+    try:
+        # Operation that might fail
+        result = process_data(data)
+        return result
+    except Exception as e:
+        # Exception will be captured in telemetry
+        raise
+```
+
+## Complete Example
+
+Here's a comprehensive example of using the telemetry decorator:
+
+```python
+import asyncio
+import time
+from typing import Dict, Any
+from mirror_sdk.telemetry.tracing.decorators import monitor
+from mirror_sdk import MirrorConfig
+from openai import AsyncOpenAI
+
+# Configure SDK
+config = MirrorConfig.from_env()
+
+# Apply telemetry to AI function
+@monitor(
+    name="content_generator",
+    session_id="user_session_123",
+    tags={
+        "model": "gpt-4o",
+        "content_type": "blog_post",
+        "user_tier": "premium"
+    },
+    mirror_config=config,
+    capture_args=True,
+    capture_result=True,
+    sanitize_pii=True
+)
+async def generate_blog_post(topic: str, user_info: Dict[str, Any]) -> str:
+    """Generate a blog post with AI, with comprehensive telemetry."""
+    # Simulate some processing time
+    await asyncio.sleep(0.5)
+    
+    # Record start time for custom duration metric
+    start_time = time.time()
+    
+    # Call AI model
+    client = AsyncOpenAI()
+    
+    prompt = f"""
+    Topic: {topic}
+    User preferences: {user_info.get('preferences', [])}
+    Tone: {user_info.get('preferred_tone', 'professional')}
+    
+    Write a blog post about the given topic.
+    """
+    
+    response = await client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+        max_tokens=1000
+    )
+    
+    result = response.choices[0].message.content
+    
+    # Calculate custom metric
+    processing_time = time.time() - start_time
+    
+    # We can log additional telemetry data if needed
+    # telemetry.log_metric("processing_time", processing_time)
+    # telemetry.log_counter("completion_tokens", len(result.split()))
+    
+    return result
+
+# Main function
+async def main():
+    # User data with some PII (will be automatically redacted)
+    user_info = {
+        "user_id": "user_12345",
+        "email": "user@example.com",  # Will be redacted in telemetry
+        "preferences": ["technology", "ai", "programming"],
+        "preferred_tone": "informative",
+        "subscription": "premium"
+    }
+    
+    # Generate content
+    result = await generate_blog_post("The Future of AI", user_info)
+    print(f"Generated content (length: {len(result)})")
+    print(result[:200] + "...")  # Print preview
+    
+    # Telemetry is automatically sent to the configured backend
+
+# Run the example
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Visualizing Telemetry Data
+
+The collected telemetry data can be visualized in the AgentIQ dashboard or exported to your existing monitoring tools:
+
+### AgentIQ Dashboard
+
+The AgentIQ dashboard provides various visualizations:
+
+- Operation timelines
+- Performance metrics
+- Error rates
+- Resource usage
+- Token consumption
+
+### Integration with External Tools
+
+You can also export telemetry data to:
+
+- Grafana
+- Datadog
+- Prometheus
+- CloudWatch
+- Custom monitoring solutions
+
+## Best Practices
+
+1. **Name Operations Clearly**: Use descriptive names for operations to make telemetry data more useful
+2. **Include Session IDs**: Track related operations with consistent session identifiers
+3. **Add Custom Tags**: Include relevant business and technical context in tags
+4. **Respect Privacy**: Use PII sanitization to protect user privacy
+5. **Monitor Critical Paths**: Prioritize monitoring for business-critical functions
+6. **Set Alerts**: Configure alerts for unexpected patterns or error thresholds
+7. **Review Regularly**: Analyze telemetry data to identify optimization opportunities
+
+## Next Steps
+
+- [Policy Monitor Decorator](/middleware/decorators/policy-monitor) - Add security policies to your functions
+- [Function Decorators](/middleware/decorators/function-decorators) - Explore specialized function decorators
+- [Telemetry API](/api-reference/sdk-reference/telemetry-api) - Learn more about the telemetry API
+

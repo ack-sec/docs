@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/schema.json",
-  "name": "Mirror Vectax SDK",
+  "name": "Mirror Security Platform",
   "logo": {
     "light": "/logo/Mirror-security_black-text@3x.png",
     "dark": "/logo/Mirror-security-whiteText@3x2.png"
@@ -42,35 +42,95 @@
     {
       "group": "Getting Started",
       "pages": [
-        "introduction"
+        "introduction",
+        "platform-overview",
+        "quick-start-guide"
       ]
     },
     {
-      "group": "Architecture",
+      "group": "Mirror Vectax SDK",
       "pages": [
-        "architecture/basic-concepts",
-        "architecture/dataflows",
-        "architecture/usecases",
-        "architecture/benchmarks"
-      ]
-    },
+        "vectax/overview",
+        {
+          "group": "Architecture",
+          "pages": [
+            "vectax/architecture/basic-concepts",
+            "vectax/architecture/dataflows",
+            "vectax/architecture/usecases",
+            "vectax/architecture/benchmarks"
+          ]
+        },
         {
           "group": "API Reference",
           "pages": [
-            "ops/sdk-configuration",
-            "ops/vector-operations",
-            "ops/rbac-operations",
-            "ops/fpe-operations",
-            "ops/prompt-operations"
+            "vectax/ops/sdk-configuration",
+            "vectax/ops/vector-operations",
+            "vectax/ops/rbac-operations",
+            "vectax/ops/fpe-operations",
+            "vectax/ops/prompt-operations"
           ]
         },
-     {
-      "group": "Integrations",
+        {
+          "group": "Integrations",
+          "pages": [
+            "vectax/integrations/VectorDB"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "AgentIQ Policy Engine",
       "pages": [
-        "integrations/VectorDB"
+        "policy-engine/policy-engine-overview",
+        {
+          "group": "Compliance Frameworks",
+          "pages": [
+            "policy-engine/compliance/overview",
+            "policy-engine/compliance/gdpr",
+            "policy-engine/compliance/hipaa",
+            "policy-engine/compliance/iso27001",
+            "policy-engine/compliance/mitre_owasp",
+            "policy-engine/compliance/eu_ai_act"
+          ]
+        },
+        {
+          "group": "Working with Policies",
+          "pages": [
+            "policy-engine/policy-catalog",
+            "policy-engine/policy-grammer",
+            "policy-engine/creating-policies",
+            "policy-engine/policy-config"
+          ]
+        },
+        {
+          "group": "Policy Capabilities",
+          "pages": [
+            "policy-engine/capabilities/rag-quality",
+            "policy-engine/capabilities/prompt-safety",
+            "policy-engine/capabilities/pii-protection"
+          ]
+        },
+        {
+          "group": "Policy Decorators",
+          "pages": [
+            "policy-engine/middleware/decorators/decorator-overview",
+            "policy-engine/middleware/decorators/policy-monitor",
+            "policy-engine/middleware/decorators/telemetry",
+            "policy-engine/middleware/decorators/function-decorators"
+          ]
+        },
+        {
+          "group": "Example Implementations",
+          "pages": [
+            "policy-engine/policy-examples/email-assistant",
+            "policy-engine/policy-examples/customer-support",
+            "policy-engine/policy-examples/content-moderation",
+            "policy-engine/policy-examples/financial-analysis"
+          ]
+        },
+        "policy-engine/api-reference/sdk-reference/mirror-sdk"
       ]
     }
-    
   ],
   "footerSocials": {
     "linkedin": "https://www.linkedin.com/company/mirrorsecurity",
@@ -82,7 +142,7 @@
     "suggestEdit": true
   },
   "search": {
-    "prompt": "Search Mirror Vectax docs..."
+    "prompt": "Search Mirror Security docs..."
   },
   "modeToggle": {
     "default": "dark"

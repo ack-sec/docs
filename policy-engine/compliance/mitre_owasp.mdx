@@ -1,0 +1,758 @@
+---
+title: 'MITRE & OWASP Security'
+description: 'Implementing MITRE ATT&CK and OWASP LLM Top 10 security controls with AgentIQ Policy Engine'
+---
+
+This guide provides detailed instructions for implementing security controls based on the MITRE ATT&CK framework and OWASP LLM Top 10 vulnerabilities using the AgentIQ Policy Engine.
+
+## Security Frameworks Overview
+
+AgentIQ's Policy Engine supports implementation of controls that align with leading security frameworks:
+
+<CardGroup cols={2}>
+  <Card title="MITRE ATT&CK" icon="shield-halved">
+    A globally accessible knowledge base of adversary tactics and techniques based on real-world observations
+  </Card>
+  <Card title="OWASP LLM Top 10" icon="triangle-exclamation">
+    A standard awareness document for developers and security professionals about the most critical security risks to LLM applications
+  </Card>
+</CardGroup>
+
+## MITRE ATT&CK Framework Implementation
+
+The MITRE ATT&CK framework describes the actions adversaries might take to compromise systems. For AI systems, these tactics are particularly relevant:
+
+### 1. Initial Access Controls
+
+Prevent unauthorized access to AI systems:
+
+```python
+@version "1.0.0";
+@author "Security Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "MITRE ATT&CK Initial Access controls";
+  severity: HIGH;
+  category: "System Integrity";
+  mitre_mappings: {
+    "technique": "T1190",
+    "tactic": "Initial Access"
+  }
+}
+
+policy mitre_initial_access {
+  // Exploit Public-Facing Application (T1190)
+  deny api_access where !validate_api_input(request_content);
+  
+  // Valid Accounts (T1078)
+  deny authentication where suspicious_login_pattern(login_details);
+  
+  // Phishing (T1566)
+  deny message_processing where contains_suspicious_content(message_content);
+  
+  // Supply Chain Compromise (T1195)
+  deny dependency_inclusion where !is_verified_dependency(dependency_details);
+  
+  // External Remote Services (T1133)
+  deny remote_service_access where !is_approved_remote_service(service_details);
+}
+```
+
+### 2. Execution Controls
+
+Prevent malicious code execution:
+
+```python
+policy mitre_execution {
+  // Command and Scripting Interpreter (T1059)
+  deny code_execution where contains_suspicious_pattern(code_content);
+  
+  // User Execution (T1204)
+  deny user_initiated_action where requires_security_review(action_details) && 
+                                 !has_security_approval(action_id);
+  
+  // Inter-Process Communication (T1559)
+  deny process_communication where !is_authorized_ipc(source_process, target_process);
+  
+  // Container Administration Command (T1609)
+  deny container_command where !is_authorized_container_admin(user_id);
+  
+  // System Services (T1569)
+  deny service_modification where !has_service_management_authorization(user_id);
+}
+```
+
+### 3. Persistence Controls
+
+Prevent attackers from maintaining access:
+
+```python
+policy mitre_persistence {
+  // Create Account (T1136)
+  deny account_creation where !follows_account_creation_policy(account_details);
+  
+  // Scheduled Task/Job (T1053)
+  deny task_scheduling where !has_scheduling_authorization(user_id);
+  
+  // Server Software Component (T1505)
+  deny component_modification where !passed_security_review(component_id);
+  
+  // External Remote Services (T1133)
+  deny remote_service_configuration where !has_remote_service_authorization(user_id);
+  
+  // Hijack Execution Flow (T1574)
+  deny library_loading where !is_verified_library(library_details);
+}
+```
+
+### 4. Privilege Escalation Controls
+
+Prevent unauthorized privilege increases:
+
+```python
+policy mitre_privilege_escalation {
+  // Access Token Manipulation (T1134)
+  deny token_manipulation where detect_token_manipulation(operation_details);
+  
+  // Exploitation for Privilege Escalation (T1068)
+  deny system_operation where contains_exploitation_pattern(operation_details);
+  
+  // Escape to Host (T1611)
+  deny container_operation where potential_container_escape(operation_details);
+  
+  // Abuse Elevation Control Mechanism (T1548)
+  deny elevation_attempt where !authorized_elevation_request(request_details);
+  
+  // Process Injection (T1055)
+  deny process_operation where potential_process_injection(operation_details);
+}
+```
+
+### 5. Defense Evasion Controls
+
+Prevent attackers from avoiding detection:
+
+```python
+policy mitre_defense_evasion {
+  // Impair Defenses (T1562)
+  deny security_modification where attempts_to_disable_security(modification_details);
+  
+  // Indicator Removal (T1070)
+  deny log_operation where attempts_to_clear_logs(operation_details);
+  
+  // Masquerading (T1036)
+  deny file_operation where attempts_file_masquerading(operation_details);
+  
+  // Obfuscated Files or Information (T1027)
+  deny content_execution where contains_obfuscated_code(content);
+  
+  // Modify Authentication Process (T1556)
+  deny authentication_modification where !authorized_auth_change(modification_details);
+}
+```
+
+### 6. Credential Access Controls
+
+Prevent credential theft:
+
+```python
+policy mitre_credential_access {
+  // Credentials from Password Stores (T1555)
+  deny password_store_access where !has_password_store_authorization(user_id);
+  
+  // Steal Web Session Cookie (T1539)
+  deny cookie_access where potential_cookie_theft(access_details);
+  
+  // Steal Application Access Token (T1528)
+  deny token_access where potential_token_theft(access_details);
+  
+  // Input Capture (T1056)
+  deny input_handling where potential_input_capture(handling_details);
+  
+  // Unsecured Credentials (T1552)
+  deny file_access where contains_credentials(file_content) && !is_secure_storage(storage_details);
+}
+```
+
+### 7. Impact Controls
+
+Prevent system or data damage:
+
+```python
+policy mitre_impact {
+  // Data Manipulation (T1565)
+  deny data_modification where !authorized_data_change(modification_details);
+  
+  // Defacement (T1491)
+  deny content_modification where potential_defacement(modification_details);
+  
+  // Denial of Service (T1499)
+  deny resource_usage where exceeds_resource_limits(usage_details);
+  
+  // Data Destruction (T1485)
+  deny data_deletion where !authorized_deletion(deletion_details);
+  
+  // Resource Hijacking (T1496)
+  deny resource_allocation where potential_resource_hijack(allocation_details);
+}
+```
+
+## OWASP LLM Top 10 Implementation
+
+The OWASP LLM Top 10 outlines the most critical security risks for LLM applications:
+
+### 1. Prompt Injection (LLM01)
+
+Prevent manipulation of LLM behavior through crafted inputs:
+
+```python
+@version "1.0.0";
+@author "Security Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "OWASP LLM01: Prompt Injection prevention";
+  severity: HIGH;
+  category: "Prompt Security";
+  owasp_mappings: ["LLM01"]
+}
+
+policy owasp_llm01_prompt_injection {
+  // Direct prompt injection detection
+  deny message where detect_prompt_injection(content);
+  
+  // Indirect prompt injection detection
+  deny message where detect_indirect_injection(content);
+  
+  // Context boundary enforcement
+  deny message where violates_context_boundaries(content);
+  
+  // System instruction protection
+  deny message where attempts_instruction_override(content);
+  
+  // Apply prompt safety checks
+  check_prompt injection with { 
+    strict_mode: true, 
+    patterns: ["system:", "ignore previous", "new instructions"],
+    threshold: 0.85
+  };
+  
+  // Monitor model behavior for instruction drift
+  action monitor_instruction_adherence(model_output) with {
+    adherence_threshold: 0.9,
+    report_violations: true
+  };
+}
+```
+
+### 2. Insecure Output Handling (LLM02)
+
+Prevent security issues from LLM output processing:
+
+```python
+policy owasp_llm02_output_handling {
+  // Prevent data leakage
+  deny response where contains_sensitive_data(content);
+  
+  // Prevent dangerously crafted content
+  deny response where detect_dangerous_content(content);
+  
+  // Prevent code injection in output
+  deny response where contains_code_injection(content);
+  
+  // Apply output validation
+  check_output sensitive_data with {
+    categories: ["pii", "credentials", "internal_info"],
+    threshold: 0.8,
+    action: "block"
+  };
+  
+  // Memory isolation enforcement
+  deny response where violates_memory_isolation(request_context, response_context);
+  
+  // Check session data exposure
+  deny response where contains_session_data(content);
+}
+```
+
+### 3. Training Data Poisoning (LLM03)
+
+Prevent and detect training data manipulation:
+
+```python
+policy owasp_llm03_data_poisoning {
+  // Data integrity verification
+  deny training where !verified_data_integrity(training_data);
+  
+  // Source authentication
+  deny data_ingestion where !authenticated_data_source(data_source);
+  
+  // Adversarial example detection
+  deny training_sample where is_adversarial_example(sample_data);
+  
+  // Domain shift detection
+  deny training where detect_domain_shift(training_distribution, target_distribution);
+  
+  // Data quality validation
+  check_data quality with {
+    minimum_quality_score: 0.9,
+    outlier_detection: true,
+    consistency_check: true
+  };
+  
+  // Monitor for model behavior anomalies
+  action monitor_model_behavior(model_outputs) with {
+    baseline_deviation_threshold: 0.2,
+    alert_on_deviation: true
+  };
+}
+```
+
+### 4. Model Denial of Service (LLM04)
+
+Prevent resource exhaustion attacks:
+
+```python
+policy owasp_llm04_denial_of_service {
+  // Rate limiting enforcement
+  deny request where exceeds_rate_limit(user_id, request_rate);
+  
+  // Token quota enforcement
+  deny request where exceeds_token_quota(user_id, token_count);
+  
+  // Input complexity limits
+  deny message where input_complexity(content) > complexity_threshold();
+  
+  // Computational resource limits
+  deny processing where estimated_resource_usage(processing_details) > resource_limit();
+  
+  // Jailbreak attempt detection (often computationally expensive)
+  check_prompt jailbreak with {
+    detection_threshold: 0.8,
+    resource_efficient_mode: true
+  };
+  
+  // Progressive throttling
+  action implement_progressive_throttling(user_id, usage_pattern) with {
+    throttling_levels: [
+      {"threshold": 0.7, "delay": 500},  // ms
+      {"threshold": 0.8, "delay": 1000}, // ms
+      {"threshold": 0.9, "delay": 2000}  // ms
+    ]
+  };
+}
+```
+
+### 5. Supply Chain Vulnerabilities (LLM05)
+
+Protect against compromised components:
+
+```python
+policy owasp_llm05_supply_chain {
+  // Dependency verification
+  deny dependency_installation where !verified_dependency(dependency_details);
+  
+  // Model provenance validation
+  deny model_loading where !verified_model_source(model_details);
+  
+  // Runtime integrity verification
+  deny component_execution where !verified_integrity(component_hash);
+  
+  // Continuous vulnerability scanning
+  action scan_dependencies(dependency_list) with {
+    scan_frequency: "daily",
+    vulnerability_database: "latest",
+    block_critical_vulnerabilities: true
+  };
+  
+  // Third-party API validation
+  deny api_integration where !approved_external_api(api_details);
+  
+  // Component update validation
+  deny update_installation where !validated_update(update_details);
+}
+```
+
+### 6. Sensitive Information Disclosure (LLM06)
+
+Prevent exposure of sensitive information:
+
+```python
+policy owasp_llm06_information_disclosure {
+  // PII detection and protection
+  deny response where detect_pii(content);
+  
+  // Credential exposure prevention
+  deny response where contains_credentials(content);
+  
+  // Internal information protection
+  deny response where contains_internal_information(content);
+  
+  // Apply comprehensive PII protection
+  check_output pii with {
+    action: "redact",
+    types: ["ALL"],
+    threshold: 0.8
+  };
+  
+  // Memory protection
+  deny response where memory_leakage(request_context, response_context);
+  
+  // Context boundary enforcement
+  deny response where context_boundary_violation(user_context, response_content);
+}
+```
+
+### 7. Insecure Plugin Design (LLM07)
+
+Secure plugin and extension integration:
+
+```python
+policy owasp_llm07_plugin_security {
+  // Plugin authorization
+  deny plugin_execution where !authorized_plugin(plugin_id, user_context);
+  
+  // Plugin input validation
+  deny plugin_input where !validated_plugin_input(input_content, plugin_schema);
+  
+  // Plugin output validation
+  deny plugin_output where !validated_plugin_output(output_content, plugin_schema);
+  
+  // Capability restriction
+  deny plugin_capability where !approved_capability(plugin_id, capability_type);
+  
+  // Plugin isolation
+  deny plugin_execution where !isolated_execution(plugin_id);
+  
+  // Plugin authentication
+  deny plugin_authentication where !secure_authentication_method(auth_method);
+}
+```
+
+### 8. Excessive Agency (LLM08)
+
+Prevent autonomous action beyond appropriate boundaries:
+
+```python
+policy owasp_llm08_excessive_agency {
+  // Action authorization
+  deny autonomous_action where !authorized_action(action_type, user_context);
+  
+  // Privilege boundary enforcement
+  deny system_action where exceeds_privileges(action_details, authorized_privileges);
+  
+  // Human approval requirements
+  deny critical_action where requires_human_approval(action_type) && !has_human_approval(action_id);
+  
+  // Action monitoring
+  action monitor_agent_actions(action_sequence) with {
+    detect_abnormal_patterns: true,
+    action_logging: true,
+    intervention_threshold: 0.8
+  };
+  
+  // Capability constraints
+  deny capability_usage where !has_capability_authorization(agent_id, capability_type);
+  
+  // Resource limitation
+  deny resource_access where !has_resource_authorization(agent_id, resource_id);
+}
+```
+
+### 9. Overreliance (LLM09)
+
+Prevent harmful reliance on LLM outputs:
+
+```python
+policy owasp_llm09_overreliance {
+  // Critical decision verification
+  deny critical_decision where !has_human_verification(decision_id);
+  
+  // Output confidence scoring
+  action score_output_confidence(output_content) with {
+    minimum_confidence: 0.8,
+    uncertainty_indication_required: true
+  };
+  
+  // Source traceability
+  deny factual_response where !has_traceable_sources(response_content);
+  
+  // Alternative suggestion requirements
+  action provide_alternatives(response_content) with {
+    minimum_alternatives: 2,
+    diversity_requirement: true
+  };
+  
+  // Factual verification
+  deny high_impact_statement where !verified_accuracy(statement_content);
+  
+  // Hallucination detection
+  check_output hallucination with {
+    detection_threshold: 0.7,
+    reference_verification: true
+  };
+}
+```
+
+### 10. Insecure Deployment (LLM10)
+
+Prevent deployment security issues:
+
+```python
+policy owasp_llm10_insecure_deployment {
+  // Environment configuration validation
+  deny deployment where !secure_configuration(deployment_details);
+  
+  // Secret management
+  deny configuration where contains_hardcoded_secrets(configuration_content);
+  
+  // Access control verification
+  deny deployment where !enforces_access_control(deployment_details);
+  
+  // Monitoring and logging requirements
+  deny production_deployment where !has_monitoring_logging(deployment_details);
+  
+  // Secure model serving
+  deny model_serving where !secure_serving_configuration(serving_details);
+  
+  // Resource isolation
+  deny deployment where !isolated_resources(deployment_details);
+}
+```
+
+## Policy Rule Mapping to MITRE ATT&CK and OWASP LLM Top 10
+
+The AgentIQ Policy Engine allows for direct mapping between policy rules and security framework components:
+
+### MITRE ATT&CK Mappings
+
+In the rule metadata, you can specify MITRE ATT&CK tactics and techniques:
+
+```python
+metadata {
+  mitre_mappings: {
+    "technique": "T1190",       // Specific technique ID
+    "subtechnique": "T1190.001", // Optional subtechnique
+    "tactic": "Initial Access"   // Tactic name
+  }
+}
+```
+
+### OWASP LLM Top 10 Mappings
+
+Similarly, you can specify OWASP LLM Top 10 categories:
+
+```python
+metadata {
+  owasp_mappings: [
+    "LLM01",  // Prompt Injection
+    "LLM02",  // Insecure Output Handling
+    "LLM05"   // Supply Chain Vulnerabilities
+  ]
+}
+```
+
+## Comprehensive Security Implementation Example
+
+Here's a complete example demonstrating application of both MITRE ATT&CK and OWASP LLM Top 10 controls:
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+from mirror_sdk.ops.safety_decorators import pii_protection
+from mirror_sdk.security.assessment import SecurityAssessment
+from mirror_sdk import MirrorConfig, MirrorSDK
+
+# Configuration
+config = MirrorConfig.from_env()
+
+# Main LLM application with comprehensive security controls
+class SecureLLMApplication:
+    def __init__(self, system_id):
+        self.system_id = system_id
+        self.sdk = MirrorSDK(config)
+        self.security_assessment = SecurityAssessment(system_id=system_id)
+    
+    @policy_monitor(name="owasp_llm01_prompt_injection")
+    async def process_user_prompt(self, user_id, prompt_content):
+        """Process user prompts with prompt injection controls."""
+        # Prompt injection protection happens automatically via policy
+        validated_result = await self.generate_response(prompt_content)
+        return validated_result
+    
+    @policy_monitor(name="owasp_llm02_output_handling")
+    @pii_protection(
+        detection_types=["ALL"],
+        action="redact"
+    )
+    async def generate_content(self, prompt, context):
+        """Generate content with output handling protections."""
+        # Output handling protection happens automatically via policy
+        result = await self.llm_generate(prompt, context)
+        return result
+    
+    @policy_monitor(name="mitre_defense_evasion")
+    async def handle_system_modification(self, user_id, modification_details):
+        """Process system modifications with defense evasion controls."""
+        # Defense evasion protection happens automatically via policy
+        modification_result = await self.apply_modification(user_id, modification_details)
+        return modification_result
+    
+    @policy_monitor(name="mitre_privilege_escalation")
+    async def process_elevation_request(self, user_id, elevation_details):
+        """Process privilege elevation with escalation controls."""
+        # Privilege escalation protection happens automatically via policy
+        elevation_result = await self.elevate_privileges(user_id, elevation_details)
+        return elevation_result
+    
+    @policy_monitor(name="owasp_llm04_denial_of_service")
+    async def process_complex_request(self, user_id, request_details):
+        """Process resource-intensive requests with DoS protections."""
+        # DoS protection happens automatically via policy
+        processing_result = await self.complex_processing(request_details)
+        return processing_result
+    
+    @policy_monitor(name="owasp_llm05_supply_chain")
+    async def load_external_model(self, model_details):
+        """Load external model with supply chain protections."""
+        # Supply chain protection happens automatically via policy
+        loading_result = await self.model_loader(model_details)
+        return loading_result
+    
+    @policy_monitor(name="owasp_llm08_excessive_agency")
+    async def perform_autonomous_action(self, action_details, user_context):
+        """Perform autonomous actions with agency controls."""
+        # Agency control happens automatically via policy
+        action_result = await self.execute_action(action_details, user_context)
+        return action_result
+    
+    @policy_monitor(name="mitre_impact")
+    async def modify_critical_data(self, user_id, data_modification_details):
+        """Modify critical data with impact controls."""
+        # Impact protection happens automatically via policy
+        modification_result = await self.apply_data_modification(data_modification_details)
+        return modification_result
+    
+    async def conduct_security_assessment(self):
+        """Conduct comprehensive security assessment."""
+        assessment_results = await self.security_assessment.evaluate(
+            frameworks=[
+                "mitre_attack",
+                "owasp_llm"
+            ],
+            categories=[
+                "initial_access",
+                "execution",
+                "persistence",
+                "privilege_escalation",
+                "defense_evasion",
+                "credential_access",
+                "impact",
+                "prompt_injection",
+                "output_handling",
+                "data_poisoning",
+                "denial_of_service",
+                "supply_chain",
+                "information_disclosure",
+                "plugin_security",
+                "excessive_agency",
+                "overreliance",
+                "insecure_deployment"
+            ]
+        )
+        
+        report = await self.security_assessment.generate_report(
+            include_evidence=True,
+            include_remediation=True,
+            format="pdf"
+        )
+        
+        return assessment_results, report
+    
+    # Helper methods (implementation details)
+    async def generate_response(self, prompt):
+        # Response generation implementation
+        return {"content": "Secure response with prompt injection protection"}
+    
+    async def llm_generate(self, prompt, context):
+        # LLM generation implementation
+        return {"content": "Generated content with output handling protection"}
+    
+    async def apply_modification(self, user_id, details):
+        # Modification implementation
+        return {"status": "applied", "modification_id": "mod_123"}
+    
+    async def elevate_privileges(self, user_id, details):
+        # Privilege elevation implementation
+        return {"status": "approved", "new_privileges": ["read", "write"]}
+    
+    async def complex_processing(self, details):
+        # Complex processing implementation
+        return {"status": "completed", "processing_id": "proc_123"}
+    
+    async def model_loader(self, details):
+        # Model loading implementation
+        return {"status": "loaded", "model_id": "model_123"}
+    
+    async def execute_action(self, details, context):
+        # Action execution implementation
+        return {"status": "executed", "action_id": "action_123"}
+    
+    async def apply_data_modification(self, details):
+        # Data modification implementation
+        return {"status": "modified", "data_id": "data_123"}
+```
+
+## Security Control Traceability Matrix
+
+For compliance and security audit purposes, it's essential to maintain a traceability matrix showing how policy rules map to security frameworks:
+
+| Policy Rule | MITRE ATT&CK | OWASP LLM Top 10 |
+|-------------|--------------|------------------|
+| `deny message where detect_prompt_injection(content)` | T1534 (Input Injection) | LLM01 (Prompt Injection) |
+| `deny response where contains_sensitive_data(content)` | T1213 (Data from Information Repositories) | LLM02 (Insecure Output Handling), LLM06 (Sensitive Information Disclosure) |
+| `deny training where !verified_data_integrity(training_data)` | T1565 (Data Manipulation) | LLM03 (Training Data Poisoning) |
+| `deny request where exceeds_rate_limit(user_id, request_rate)` | T1499 (Endpoint Denial of Service) | LLM04 (Model Denial of Service) |
+| `deny dependency_installation where !verified_dependency(dependency_details)` | T1195 (Supply Chain Compromise) | LLM05 (Supply Chain Vulnerabilities) |
+| `deny response where detect_pii(content)` | T1530 (Data from Cloud Storage) | LLM06 (Sensitive Information Disclosure) |
+| `deny plugin_execution where !authorized_plugin(plugin_id, user_context)` | T1559 (Inter-Process Communication) | LLM07 (Insecure Plugin Design) |
+| `deny autonomous_action where !authorized_action(action_type, user_context)` | T1548 (Abuse Elevation Control Mechanism) | LLM08 (Excessive Agency) |
+| `deny critical_decision where !has_human_verification(decision_id)` | T1496 (Resource Hijacking) | LLM09 (Overreliance) |
+| `deny deployment where !secure_configuration(deployment_details)` | T1562 (Impair Defenses) | LLM10 (Insecure Deployment) |
+
+## Security Verification Checklist
+
+Use this checklist to verify your security implementation for LLM applications:
+
+- [ ] Prompt injection controls are implemented and tested
+- [ ] Output handling includes comprehensive security checks
+- [ ] Training data validation and integrity checks are applied
+- [ ] Resource consumption limits and monitoring are in place
+- [ ] Supply chain security controls validate all external components
+- [ ] PII and sensitive information controls prevent disclosure
+- [ ] Plugin security ensures secure integration of extensions
+- [ ] Agency limitations restrict autonomous actions appropriately
+- [ ] Human oversight is implemented for critical decisions
+- [ ] Deployment security ensures proper configuration and isolation
+- [ ] Controls map directly to MITRE ATT&CK tactics and techniques
+- [ ] Controls address all applicable OWASP LLM Top 10 vulnerabilities
+- [ ] Regular security assessments validate control effectiveness
+
+## Conclusion
+
+Implementing security controls based on MITRE ATT&CK and OWASP LLM Top 10 provides a comprehensive defense strategy for AI systems. By leveraging AgentIQ's Policy Engine, organizations can systematically implement these controls and demonstrate compliance with leading security frameworks.
+
+For additional guidance, refer to other compliance resources:
+
+<CardGroup cols={3}>
+  <Card title="GDPR Compliance" icon="shield-halved" href="/policy-engine/compliance/gdpr">
+    Data protection regulations
+  </Card>
+  <Card title="EU AI Act" icon="robot" href="/policy-engine/compliance/eu_ai_act">
+    AI specific regulations
+  </Card>
+  <Card title="ISO 27001" icon="lock" href="/policy-engine/compliance/iso27001">
+    Information security standard
+  </Card>
+</CardGroup>
+

@@ -1,0 +1,329 @@
+---
+title: 'Customer Support Policies'
+description: 'Security and governance policies for AI customer support agents'
+---
+
+
+This guide provides practical examples of policies for securing AI-powered customer support agents. These examples can be adapted for your specific requirements.
+
+## Basic Customer Support Policy
+
+This policy implements fundamental security controls for a customer support agent:
+
+```
+@version "1.0.0";
+@author "Security Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "Basic security policy for customer support agents";
+  severity: HIGH;
+  category: "Customer Support Security";
+}
+
+policy customer_support_basic {
+  // Prevent PII disclosure
+  deny response where detect_pii(content);
+  
+  // Verification requirements
+  deny action where !has_verified_customer(session_id) && action_type == "account_modification";
+  
+  // Limit escalation privileges
+  deny action where action_type == "escalation" && !is_allowed_escalation(agent_id, issue_type);
+  
+  // Prevent system command execution
+  deny response where contains_system_commands(content);
+  
+  // Allow everything else
+  allow response where true;
+}
+```
+
+## Advanced Customer Support Protection
+
+This policy adds more sophisticated controls for customer support systems:
+
+```
+@version "1.0.0";
+@author "Security Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "Advanced customer support agent security policy";
+  severity: HIGH;
+  category: "Customer Support Security";
+}
+
+policy customer_support_advanced {
+  // Basic protections
+  deny response where detect_pii(content);
+  deny action where !has_verified_customer(session_id) && action_type == "account_modification";
+  
+  // Prompt injection protection
+  check_prompt injection with {
+    threshold: 0.85,
+    strict_mode: true,
+    patterns: [
+      "ignore previous instructions",
+      "system prompt",
+      "you are now",
+      "default settings"
+    ]
+  };
+  
+  // RAG security for knowledge base access
+  check_rag source_verification with {
+    threshold: 0.9,
+    require_validation: true,
+    source_types: ["knowledge_base", "policy_documents", "support_scripts"]
+  };
+  
+  // Output validation
+  check_output sensitive_data with {
+    categories: ["financial", "account", "personal", "security"]
+  };
+  
+  // Prevent hallucinations
+  check_output factual_consistency with {
+    min_score: 0.9,
+    check_citations: true,
+    knowledge_sources: ["company_kb", "product_docs"]
+  };
+  
+  // Model behavior checks
+  check_model instruction_adherence with {
+    min_compliance: 0.95,
+    critical_instructions: ["privacy_guidelines", "support_protocols"]
+  };
+  
+  // Session monitoring
+  action log_session_activity(session_id, customer_id, agent_actions) with {
+    retention_period: 90,  // days
+    encryption: "AES-256"
+  };
+  
+  // Allow properly verified operations
+  allow response where true;
+}
+```
+
+## Multi-tier Support Policy
+
+This policy implements different security rules based on support tier levels:
+
+```
+@version "1.0.0";
+@author "Support Operations";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "Multi-tier support policy with escalation controls";
+  severity: HIGH;
+  category: "Customer Support";
+}
+
+policy support_tier_policy {
+  // Common protections
+  deny response where detect_pii(content);
+  check_prompt injection;
+  check_output sensitive_data;
+  
+  // Tier 1 (General Support) restrictions
+  if support_tier(agent_id) == "tier1" then {
+    policy tier1_policy {
+      deny action where action_type in ["refund", "subscription_change", "account_reset"];
+      deny action where transaction_amount(action) > 50;
+      deny access where resource_type in ["billing_system", "admin_portal"];
+      allow action where is_documented_solution(action_id);
+    }
+  }
+  
+  // Tier 2 (Technical Support) restrictions
+  if support_tier(agent_id) == "tier2" then {
+    policy tier2_policy {
+      deny action where action_type in ["full_refund", "account_termination"];
+      deny action where transaction_amount(action) > 500;
+      deny access where resource_type == "admin_portal";
+      check_model technical_accuracy with {
+        domain: "product_support",
+        min_score: 0.85
+      };
+    }
+  }
+  
+  // Tier 3 (Advanced Support) permissions
+  if support_tier(agent_id) == "tier3" then {
+    policy tier3_policy {
+      deny action where transaction_amount(action) > 2000;
+      deny action where action_type == "legal_exception" && !has_manager_approval(action_id);
+      action record_advanced_support_session(session_id, customer_id) with {
+        record_screen: true,
+        record_actions: true
+      };
+    }
+  }
+  
+  // Escalation controls
+  policy escalation_rules {
+    deny action where action_type == "escalate" && !meets_escalation_criteria(issue_id, support_tier(agent_id));
+    action log_escalation(session_id, issue_id, from_tier, to_tier) with {
+      require_reason: true
+    };
+  }
+  
+  // Allow compliant actions
+  allow response where true;
+}
+```
+
+## Compliance-Focused Support Policy
+
+This policy emphasizes regulatory compliance for customer support:
+
+```
+@version "1.0.0";
+@author "Compliance Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "Regulatory compliance policy for customer support";
+  severity: HIGH;
+  category: "Compliance";
+}
+
+policy support_compliance {
+  // Required compliance elements
+  deny response where !contains(content, required_disclaimer(customer_region));
+  
+  // Regulated industry constraints
+  if customer_industry(customer_id) == "healthcare" then {
+    policy healthcare_rules {
+      deny response where contains_phi(content);
+      deny action where action_type == "data_access" && !has_hipaa_authorization(session_id);
+      action log_phi_interaction(session_id) with {
+        retention: 6, // years
+        include_audit_trail: true
+      };
+    }
+  }
+  
+  if customer_industry(customer_id) == "financial" then {
+    policy financial_rules {
+      deny response where contains_account_data(content) && !has_verified_identity(session_id, "strong");
+      deny action where action_type == "transaction" && !has_fraud_check(action_id);
+      check_output regulatory_terms with {
+        regulations: ["FINRA", "SEC", "CFPB"],
+        restricted_phrases: financial_restricted_list()
+      };
+    }
+  }
+  
+  // Data sovereignty
+  deny action where customer_region(customer_id) == "EU" && 
+    !complies_with_gdpr(action_type, customer_consent(customer_id));
+  
+  // Age verification for certain products
+  deny action where requires_age_verification(product_id) && !has_verified_age(customer_id, required_age(product_id));
+  
+  // Accessibility requirements
+  action ensure_accessibility(response_content, customer_accessibility_needs(customer_id));
+  
+  // Allow compliant interactions
+  allow response where true;
+}
+```
+
+## Implementation Example
+
+Here's how to apply the customer support policy using the Python SDK:
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+from mirror_sdk import MirrorConfig
+
+# Initialize configuration
+config = MirrorConfig.from_env()
+
+# Custom violation handler
+async def support_violation_handler(violation_event, *args, **kwargs):
+    logger.warning(f"Support policy violation: {violation_event}")
+    
+    # Determine appropriate response based on violation type
+    if violation_event.metadata.get("rule_type") == "pii_detection":
+        return {
+            "error": "I cannot provide that information due to our privacy policy.",
+            "suggestion": "Please contact our secure support line for sensitive account matters."
+        }
+    elif violation_event.metadata.get("rule_type") == "escalation":
+        return {
+            "error": "This request requires escalation to a senior support agent.",
+            "action": "escalate_to_human"
+        }
+    else:
+        return {
+            "error": "I cannot complete this action due to security policies",
+            "details": violation_event.metadata.get("reason", "Policy violation")
+        }
+
+# Apply policy to support agent function
+@policy_monitor(
+    name="customer_support_advanced",
+    mirror_config=config,
+    on_policy_violation=support_violation_handler,
+    session_id=lambda **kwargs: kwargs.get("session_id")
+)
+async def handle_support_request(session_id: str, customer_id: str, query: str) -> dict:
+    """
+    Processes a customer support request with policy protection.
+    """
+    # Support request handling logic
+    # This function is now protected by the policy
+    
+    client = AsyncOpenAI()
+    
+    # Load customer context using session ID
+    customer_context = await load_customer_context(customer_id, session_id)
+    
+    prompt = f"""
+    Customer query: {query}
+    
+    Customer context:
+    Account type: {customer_context['account_type']}
+    Subscription status: {customer_context['subscription_status']}
+    Recent interactions: {customer_context['recent_interactions']}
+    
+    Respond to the customer's query following our support guidelines.
+    """
+    
+    response = await client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    
+    # Process the response
+    support_response = {
+        "message": response.choices[0].message.content,
+        "suggested_actions": extract_suggested_actions(response.choices[0].message.content),
+        "session_id": session_id,
+        "customer_id": customer_id
+    }
+    
+    return support_response
+```
+
+## Best Practices for Customer Support Policies
+
+1. **Identity verification first** - Always verify customer identity before handling sensitive requests
+2. **Tiered access control** - Implement different access levels based on support tier
+3. **Limit information disclosure** - Only share what's necessary to resolve the issue
+4. **Knowledge base security** - Ensure RAG systems only retrieve appropriate information
+5. **Clear escalation paths** - Define exactly when and how issues should be escalated
+6. **Monitor for social engineering** - Implement checks for common social engineering tactics
+7. **Document all decisions** - Maintain comprehensive logs of all support actions
+
+
+## Next Steps
+
+- [Email Assistant Policies](/policy-engine/policy-examples/email-assistant) - Security policies for email assistants
+- [Content Moderation Policies](/policy-engine/policy-examples/content-moderation) - Policies for content moderation systems
+- [Financial Analysis Policies](/policy-engine/policy-examples/financial-analysis) - Controls for financial systems

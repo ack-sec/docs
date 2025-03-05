@@ -1,0 +1,307 @@
+---
+title: 'Quick Start Guide'
+description: 'Get started with Mirror Security Platform in 15 minutes'
+---
+
+# Quick Start Guide
+
+This guide will help you get started with the Mirror Security Platform in 15 minutes. You'll learn how to set up both Mirror Vectax SDK for data protection and AgentIQ Policy Engine for policy enforcement.
+
+## Prerequisites
+
+<CodeGroup>
+```python Prerequisites
+Python 3.9+
+Mirror Security API key
+OpenAI API key (optional - for examples)
+```
+</CodeGroup>
+
+## Installation
+
+<Steps>
+<Step title="Install the SDK">
+```bash
+# Install the complete Mirror Security SDK
+pip install mirror-sdk
+
+# For examples with OpenAI and ChromaDB
+pip install mirror-sdk[examples]
+```
+</Step>
+
+<Step title="Configure Environment">
+```bash
+export MIRROR_API_KEY="your-api-key"
+export OPENAI_API_KEY="your-openai-key"  # if using examples
+```
+</Step>
+
+<Step title="Initialize SDK">
+```python
+from mirror_sdk.core.mirror_core import MirrorSDK, MirrorConfig
+
+config = MirrorConfig.from_env()
+sdk = MirrorSDK(config)
+```
+</Step>
+</Steps>
+
+## Securing Data with Vectax SDK
+
+### Encrypt Vector Embeddings
+
+<CodeGroup>
+```python Vector Operations
+from mirror_sdk.core.models import VectorData
+import openai
+
+# Get embeddings from an AI model
+response = openai.embeddings.create(
+    model="text-embedding-3-small",
+    input="Customer feedback about the product"
+)
+embeddings = response.data[0].embedding
+
+# Encrypt the embeddings
+vector = VectorData(vector=embeddings, id="customer_feedback_1")
+encrypted = sdk.vectax.encrypt(vector)
+
+# Store the encrypted vector in your database
+# db.store(encrypted)
+
+# Later, when you need to use it
+# encrypted_from_db = db.get("customer_feedback_1")
+decrypted = sdk.vectax.decrypt(encrypted)
+```
+</CodeGroup>
+
+### Apply Access Controls
+
+<CodeGroup>
+```python Access Control
+# Define an access policy
+policy = {
+    "roles": ["data_scientist", "analyst"],
+    "groups": ["research"],
+    "departments": ["ai"]
+}
+sdk.set_policy(policy)
+
+# Generate a user-specific access key
+user_key = sdk.rbac.generate_user_secret_key({
+    "roles": ["data_scientist"],
+    "groups": ["research"],
+    "departments": ["ai"]
+})
+
+# Share the user_key with authorized users
+```
+</CodeGroup>
+
+### Protect Metadata
+
+<CodeGroup>
+```python Format-Preserving Encryption
+# Sensitive document metadata
+metadata = {
+    "customer_id": "12345",
+    "source": "feedback_survey",
+    "email": "user@example.com"
+}
+
+# Encrypt the metadata while preserving format
+key = sdk.metadata.generate_key()
+tweak = sdk.metadata.generate_tweak_from_data(metadata)
+encrypted_metadata = sdk.metadata.encrypt(metadata, key, tweak)
+
+# encrypted_metadata still has the same structure but values are encrypted
+# Store both encrypted vector and metadata
+```
+</CodeGroup>
+
+## Implementing Policies with AgentIQ
+
+### Define a Simple Policy
+
+<CodeGroup>
+```python Policy Definition
+# Create a policy file (my_policy.mirror)
+"""
+policy my_security_policy {
+  // Prevent PII exposure
+  protect_pii {
+    fields: ["email", "phone", "address", "ssn"];
+    action: REDACT;
+  };
+  
+  // Prevent prompt injection
+  check_prompt injection with {
+    threshold: 0.8;
+    action: BLOCK;
+  };
+  
+  // Ensure output safety
+  validate_output safety with {
+    categories: ["harmful", "illegal", "unethical"];
+    threshold: 0.7;
+    action: BLOCK;
+  };
+}
+"""
+
+# Save this to a file or use the SDK to create it programmatically
+```
+</CodeGroup>
+
+### Apply Policy with a Decorator
+
+<CodeGroup>
+```python Decorator Integration
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+import openai
+
+@policy_monitor(name="my_security_policy")
+async def generate_response(prompt: str) -> str:
+    """Generate AI response with policy protection."""
+    response = openai.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.choices[0].message.content
+
+# When you call this function, the policy will be automatically enforced
+result = await generate_response("Tell me about cybersecurity best practices")
+```
+</CodeGroup>
+
+### Protect RAG Applications
+
+<CodeGroup>
+```python RAG Protection
+from mirror_sdk.ops.rag_decorators import rag_security
+import openai
+
+@rag_security(
+    verify_sources=True,
+    detect_tampering=True,
+    prevent_poisoning=True,
+    check_relevance=True,
+    threshold=0.85
+)
+async def retrieve_and_generate(query: str) -> str:
+    """Secure RAG implementation with security controls."""
+    # Retrieve documents (in a real app, this would query a database)
+    documents = await retrieve_documents(query)
+    
+    # Generate response with context
+    context = "\n\n".join([doc["content"] for doc in documents])
+    response = openai.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": f"Use this context: {context}"},
+            {"role": "user", "content": query}
+        ]
+    )
+    return response.choices[0].message.content
+
+# Mock document retrieval function
+async def retrieve_documents(query: str):
+    # In a real application, this would query a vector database
+    return [
+        {"content": "Example document content related to the query"}
+    ]
+```
+</CodeGroup>
+
+## Putting It All Together
+
+Here's a complete example that combines both Vectax SDK and AgentIQ Policy Engine:
+
+<CodeGroup>
+```python Complete Example
+import openai
+import asyncio
+from mirror_sdk.core.models import VectorData
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+
+# Initialize SDK
+from mirror_sdk.core.mirror_core import MirrorSDK, MirrorConfig
+config = MirrorConfig.from_env()
+sdk = MirrorSDK(config)
+
+# 1. Create and encrypt document embeddings
+async def index_document(doc_text: str, doc_id: str, metadata: dict):
+    # Get embeddings
+    embedding = openai.embeddings.create(
+        model="text-embedding-3-small",
+        input=doc_text
+    ).data[0].embedding
+    
+    # Encrypt embedding
+    vector = VectorData(vector=embedding, id=doc_id)
+    encrypted = sdk.vectax.encrypt(vector)
+    
+    # Encrypt metadata
+    key = sdk.metadata.generate_key()
+    tweak = sdk.metadata.generate_tweak_from_data(metadata)
+    encrypted_metadata = sdk.metadata.encrypt(metadata, key, tweak)
+    
+    # In a real app, you would store these in your database
+    return encrypted, encrypted_metadata
+
+# 2. Define policy-protected AI function
+@policy_monitor(name="my_security_policy")
+async def secure_ai_assistant(prompt: str) -> str:
+    """Generate AI responses with security policy enforcement."""
+    response = openai.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.choices[0].message.content
+
+# 3. Use both components in an application
+async def main():
+    # Index a document securely
+    doc = "Information about our new product launch in March 2025"
+    metadata = {
+        "author": "Jane Smith",
+        "department": "Marketing",
+        "sensitivity": "Confidential"
+    }
+    encrypted_vector, encrypted_metadata = await index_document(doc, "doc_123", metadata)
+    print("Document securely indexed with encrypted vector and metadata")
+    
+    # Use the secure AI assistant
+    prompt = "Summarize our product launch strategy"
+    response = await secure_ai_assistant(prompt)
+    print(f"Secure AI Response: {response}")
+
+# Run the example
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+</CodeGroup>
+
+## Next Steps
+
+Now that you've set up basic security for your AI application, here are some next steps to explore:
+
+<CardGroup cols={2}>
+  <Card title="Vector Database Integration" icon="database" href="/vectax/overview">
+    Learn how to integrate with ChromaDB and other vector databases
+  </Card>
+  <Card title="Advanced Policy Creation" icon="file-code" href="/policy-engine/creating-policies">
+    Create custom policies for your specific security and compliance needs
+  </Card>
+  <Card title="Security Decorators" icon="shield-halved" href="/policy-engine/middleware/decorators/decorator-overview">
+    Explore additional decorators for specific security controls
+  </Card>
+  <Card title="Compliance Frameworks" icon="balance-scale" href="/policy-engine/compliance/overview">
+    Implement policies that map to regulatory frameworks
+  </Card>
+</CardGroup>
+
+<Check>
+  Questions? Contact us at hello@mirrorsecurity.io
+</Check>

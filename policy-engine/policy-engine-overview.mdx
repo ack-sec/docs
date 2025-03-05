@@ -1,0 +1,92 @@
+---
+title: 'Policy Engine Overview'
+description: 'Learn how AgentIQ Policy Engine protects your AI applications'
+---
+
+The AgentIQ Policy Engine provides comprehensive governance, security, and compliance controls for AI applications. It enables you to define, enforce, and monitor policies that regulate AI behavior across your entire application ecosystem.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Declarative Policy Grammar" icon="code">
+    Define policies using a simple, readable grammar that's both powerful and intuitive
+  </Card>
+  <Card title="Real-time Enforcement" icon="bolt">
+    Apply policies at runtime to prevent violations before they occur
+  </Card>
+  <Card title="Comprehensive Protection" icon="shield-check">
+    Built-in rules for PII protection, prompt safety, RAG security, and more
+  </Card>
+  <Card title="Seamless Integration" icon="plug">
+    Apply policies through simple decorators with minimal code changes
+  </Card>
+</CardGroup>
+
+## How It Works
+
+The Policy Engine intercepts interactions with your AI models and validates them against your defined policies. It can:
+
+1. **Analyze inputs** to detect and prevent prompt injection, PII exposure, and other security risks
+2. **Verify outputs** to ensure they meet safety requirements and don't contain sensitive information
+3. **Monitor operations** to ensure compliance with internal policies and regulatory requirements
+4. **Collect telemetry** for auditing and continuous improvement
+
+<Frame>
+  ![Policy Engine Flow](/images/policy-engine-flow.png)
+</Frame>
+
+## Implementation Approaches
+
+AgentIQ offers multiple ways to implement policy enforcement:
+
+### Python Decorators
+
+The simplest way to add policy protection is through Python decorators:
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+
+@policy_monitor(name="my_security_policy")
+async def generate_response(user_query: str) -> str:
+    # Your AI generation code here
+    return response
+```
+
+### Middleware Integration
+
+For more complex applications, you can integrate the policy engine as middleware:
+
+```python
+from mirror_sdk import PolicyMiddleware
+
+app = FastAPI()
+policy_middleware = PolicyMiddleware(policy_name="api_security_policy")
+app.add_middleware(policy_middleware)
+```
+
+### Programmatic API
+
+For maximum flexibility, use the policy engine directly:
+
+```python
+from mirror_sdk import PolicyEngine, PolicySource
+
+engine = PolicyEngine()
+policy_source = PolicySource(id="my_security_policy")
+policy_content = await engine.get_policy_content(policy_source)
+result = await engine.evaluate_trace(policy_content, trace_data)
+```
+
+## Next Steps
+
+<CardGroup cols={3}>
+  <Card title="Policy Grammar" icon="code" href="/policy-engine/policy-grammer">
+    Learn the policy definition language
+  </Card>
+  <Card title="Creating Policies" icon="file-pen" href="/policy-engine/creating-policies">
+    Write your first policy
+  </Card>
+  <Card title="Policy Examples" icon="lightbulb" href="/policy-engine/policy-examples/email-assistant">
+    See real-world examples
+  </Card>
+</CardGroup>

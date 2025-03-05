@@ -1,0 +1,456 @@
+---
+title: 'GenAI Compliance & Governance '
+description: 'How to leverage AgentIQ Policy Engine for meeting regulatory requirements across frameworks'
+---
+
+The AgentIQ Policy Engine provides robust capabilities to ensure your AI applications meet regulatory requirements, industry standards, and organizational policies. This guide outlines how to implement compliance controls across various frameworks and includes ready-to-use policies for common compliance needs.
+
+## Supported Compliance Frameworks
+
+AgentIQ's Policy Engine includes built-in support for major regulatory frameworks:
+
+<CardGroup cols={2}>
+  <Card title="Data Privacy" icon="shield-check">
+    GDPR, CCPA/CPRA, HIPAA, PIPEDA
+  </Card>
+  <Card title="AI Governance" icon="robot">
+    EU AI Act, NIST AI RMF, ISO/IEC 42001
+  </Card>
+  <Card title="Information Security" icon="lock">
+    ISO 27001, SOC 2, NIST CSF, PCI DSS
+  </Card>
+  <Card title="Industry-Specific" icon="building">
+    HIPAA (Healthcare), GLBA (Financial), FERPA (Education)
+  </Card>
+</CardGroup>
+
+## Compliance Implementation Approaches
+
+### 1. Declarative Policy-Based Approach
+
+Define compliance requirements directly in policy files using AgentIQ's declarative grammar:
+
+```bash
+@version "1.0.0";
+@author "Compliance Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "GDPR compliance policy for data protection";
+  severity: HIGH;
+  category: "Data Protection";
+  compliance_mappings: {
+    "gdpr_article": ["Article 5", "Article 6", "Article 25", "Article 32"]
+  }
+}
+
+policy gdpr_compliance {
+  // Prevent PII exposure
+  deny message where detect_pii(content);
+  
+  // Enforce data minimization
+  deny message where excessive_data_collection(content);
+  
+  // Ensure right to be forgotten
+  action enforce_deletion(user_id) with {
+    verify_complete: true,
+    include_backups: true
+  };
+  
+  // Validate consent
+  deny message where !has_valid_consent(user_id, "data_processing");
+  
+  // Ensure data portability
+  action ensure_data_portability(user_id, data) with {
+    format: "json",
+    include_metadata: true
+  };
+  
+  // Apply PII protection
+  check_output pii with {
+    action: "redact",
+    types: ["ALL"]
+  };
+}
+```
+
+### 2. Pre-Built Policy Templates
+
+Use pre-built policy templates for common compliance frameworks:
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+
+@policy_monitor(name="hipaa_compliance_policy")
+async def process_patient_data(patient_data):
+    # Function automatically enforced with HIPAA controls
+    return result
+```
+
+### 3. Programmatic Integration
+
+Integrate compliance checks into your application code:
+
+```python
+from mirror_sdk.ops.mirror_agentiq_policy_api import PolicySource
+from mirror_sdk import MirrorSDK, MirrorConfig
+
+async def validate_gdpr_compliance(user_data, user_consent):
+    config = MirrorConfig.from_env()
+    
+    with MirrorSDK(config) as sdk:
+        policy_service = sdk.agentiq_policyeval
+        
+        # Get GDPR policy
+        policy_content = await policy_service.get_policy_content(
+            PolicySource(id="gdpr_compliance_policy")
+        )
+        
+        # Create trace data
+        trace_data = {
+            "type": "data_processing",
+            "content": user_data,
+            "metadata": {
+                "user_id": user_data.get("user_id"),
+                "consent_status": user_consent,
+                "processing_purpose": "service_delivery"
+            }
+        }
+        
+        # Evaluate compliance
+        result = await policy_service.evaluate_trace(policy_content, trace_data)
+        
+        if result.allowed:
+            # Proceed with processing
+            return True, "Processing allowed"
+        else:
+            # Handle compliance violation
+            return False, f"Compliance violation: {result.rule_type} on {result.resource_type}"
+```
+
+## Framework-Specific Implementation Guides
+
+### EU AI Act Compliance
+
+The EU AI Act categorizes AI systems by risk level and imposes specific requirements based on these categories. AgentIQ provides comprehensive controls for meeting these requirements:
+
+```python
+policy eu_ai_act_compliance {
+  // Risk classification
+  action classify_ai_risk(model_parameters) with {
+    risk_categories: ["minimal", "limited", "high", "unacceptable"],
+    require_documentation: true
+  };
+  
+  // Transparency requirements
+  deny response where !includes_ai_disclosure(content);
+  
+  // Human oversight
+  deny message where requires_human_review(risk_level, content) && !has_human_reviewer(session_id);
+  
+  // Data quality controls
+  check_output factual_consistency with {
+    min_score: 0.9,
+    require_citations: true
+  };
+  
+  // Bias detection and mitigation
+  deny response where bias_detected(content, protected_attributes);
+  
+  // Documentation requirements
+  action maintain_documentation(model_id, version, update_type) with {
+    documentation_types: ["technical", "risk", "compliance"],
+    retention_period: 730  // days
+  };
+}
+```
+
+**Key Implementation Steps:**
+
+1. **Risk Assessment**: Conduct and document risk assessment for your AI systems
+2. **Technical Documentation**: Maintain comprehensive technical documentation
+3. **Data Governance**: Implement controls for data quality and bias mitigation
+4. **Transparency Mechanisms**: Ensure disclosure of AI use to end users
+5. **Human Oversight**: Implement human review for high-risk decisions
+6. **Monitoring System**: Deploy continuous monitoring for compliance
+
+### GDPR Compliance
+
+For GDPR compliance, focus on protecting personal data with these controls:
+
+```python
+@policy_monitor(name="gdpr_compliance")
+async def process_user_data(user_data):
+    # Function is automatically enforced with GDPR controls
+    result = await analyze_data(user_data)
+    return result
+```
+
+**Key Implementation Areas:**
+
+1. **Data Minimization**: Only collect and process necessary data
+2. **Right to Erasure**: Implement comprehensive deletion capabilities
+3. **Consent Management**: Validate and track user consent
+4. **Data Security**: Ensure encryption and access controls
+5. **PII Protection**: Implement automatic PII detection and protection
+6. **Cross-Border Transfers**: Monitor and control data transfers
+7. **Breach Response**: Define processes for handling data breaches
+
+### HIPAA Compliance
+
+For healthcare applications, implement these HIPAA-focused controls:
+
+```python
+policy hipaa_compliance {
+  // Prevent PHI exposure
+  deny message where detect_phi(content);
+  
+  // Enforce encryption
+  check_encryption aes with {
+    key_length: 256,
+    mode: "gcm"
+  };
+  
+  // Ensure authorization
+  deny message where !is_authorized(user_id, "phi_access");
+  
+  // Audit logging
+  action log_phi_access(user_id, access_type, data_type) with {
+    retention_period: 365,  // days
+    include_context: true
+  };
+  
+  // Apply PHI protection
+  check_output sensitive_data with {
+    categories: ["medical", "health"],
+    threshold: 0.9
+  };
+}
+```
+
+**Key Implementation Areas:**
+
+1. **PHI Protection**: Automatically detect and secure protected health information
+2. **Access Controls**: Implement role-based access for PHI
+3. **Transmission Security**: Enforce encryption for data in transit
+4. **Audit Controls**: Maintain comprehensive access logs
+5. **Integrity Controls**: Verify data hasn't been altered improperly
+6. **Risk Analysis**: Document risk assessment and mitigation
+
+## Compliance Mapping System
+
+AgentIQ includes a powerful compliance mapping system that links policy rules to specific regulatory requirements:
+
+```python
+metadata {
+  compliance_mappings: {
+    "eu_ai_regulation": [
+      "AI-Act-03",
+      "AI-Act-04"
+    ],
+    "nist_framework": [
+      "PR.DS-1",
+      "PR.DS-5"
+    ],
+    "iso_standard": [
+      "ISO/IEC 27001:A.8.2.3"
+    ],
+    "gdpr_article": [
+      "Article 5",
+      "Article 32"
+    ],
+    "hipaa_rule": [
+      "164.312(a)(1)"
+    ]
+  }
+}
+```
+
+This mapping provides:
+
+1. **Traceability**: Direct links between controls and requirements
+2. **Gap Analysis**: Identify missing controls for specific regulations
+3. **Audit Support**: Generate evidence of compliance for auditors
+4. **Documentation**: Automatic documentation of compliance coverage
+
+## Implementation Best Practices
+
+### 1. Layered Defense Strategy
+
+Implement multiple complementary controls for critical requirements:
+
+```python
+// PII protection through multiple mechanisms
+deny message where detect_pii(content);
+check_output pii with { action: "redact" };
+validate_data_minimization(content);
+```
+
+### 2. Risk-Based Approach
+
+Focus controls based on data sensitivity and processing risk:
+
+```python
+// Apply stricter controls for high-risk operations
+if operation_risk_level(context) == "high" then {
+  policy strict_controls {
+    // High-risk controls
+  }
+} else {
+  policy standard_controls {
+    // Standard controls
+  }
+}
+```
+
+### 3. Continuous Monitoring
+
+Implement ongoing monitoring rather than point-in-time controls:
+
+```python
+// Continuous monitoring
+action monitor_compliance_metrics(metrics) with {
+  interval: "hourly",
+  thresholds: {
+    "pii_exposure": 0,
+    "unauthorized_access": 0,
+    "consent_violations": 0
+  },
+  alert_channels: ["security_team", "compliance_officer"]
+};
+```
+
+### 4. Documentation and Evidence
+
+Maintain comprehensive documentation and evidence:
+
+```python
+// Documentation requirements
+action maintain_evidence(event_type, context_data) with {
+  retention_period: 730,  // days
+  evidence_types: ["logs", "decisions", "validations"],
+  tamper_proof: true
+};
+```
+
+## Practical Compliance Examples
+
+### 1. Email Assistant with GDPR Controls
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+
+@policy_monitor(name="email_gdpr_policy")
+async def draft_email_response(user_id, email_thread, query):
+    """
+    Drafts an email response with GDPR controls automatically applied.
+    Controls include PII detection, consent validation, and data minimization.
+    """
+    response = await generate_response(email_thread, query)
+    return response
+```
+
+### 2. Healthcare RAG System with HIPAA Controls
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+from mirror_sdk.ops.rag_decorators import rag_security
+
+@policy_monitor(name="hipaa_compliance")
+@rag_security(verify_sources=True, detect_tampering=True)
+async def medical_knowledge_retrieval(patient_id, query):
+    """
+    Retrieves medical information with HIPAA controls automatically applied.
+    Controls include PHI protection, access verification, and audit logging.
+    """
+    documents = await retrieve_documents(query)
+    response = await generate_with_context(query, documents)
+    return response
+```
+
+### 3. Financial Advisor with PCI DSS Controls
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+from mirror_sdk.ops.safety_decorators import pii_protection
+
+@policy_monitor(name="financial_compliance")
+@pii_protection(detection_types=["CREDIT_CARD", "BANK_ACCOUNT", "SSN"])
+async def process_financial_advice(user_id, financial_data, query):
+    """
+    Processes financial data with PCI DSS and financial regulations applied.
+    Controls include financial data protection, transaction validation,
+    and regulatory disclosures.
+    """
+    advice = await generate_financial_advice(financial_data, query)
+    return advice
+```
+
+## Compliance Reporting and Audit Support
+
+AgentIQ provides comprehensive reporting capabilities to demonstrate compliance:
+
+### Compliance Dashboard
+
+Access real-time compliance metrics through the dashboard:
+
+- Compliance status by framework
+- Policy enforcement statistics
+- Detected violations with remediation status
+- Coverage analysis for regulatory requirements
+
+### Audit Logs
+
+Generate detailed audit logs for compliance verification:
+
+```python
+# Example audit log query
+audit_logs = await sdk.compliance.get_audit_logs(
+    start_date="2024-01-01",
+    end_date="2024-03-31",
+    frameworks=["GDPR", "EU AI Act"],
+    include_remediation=True
+)
+```
+
+### Evidence Collection
+
+Automatically collect and preserve compliance evidence:
+
+```python
+# Generate compliance evidence package
+evidence_package = await sdk.compliance.generate_evidence_package(
+    framework="GDPR",
+    time_period="Q1 2024",
+    include_policies=True,
+    include_audit_logs=True,
+    include_violations=True
+)
+```
+
+## Conclusion
+
+AgentIQ's Policy Engine provides a comprehensive solution for implementing compliance controls across multiple regulatory frameworks. By leveraging the declarative policy grammar, pre-built templates, and compliance mapping system, organizations can efficiently maintain compliance while focusing on their core business objectives.
+
+For specific implementation guidance, refer to the framework-specific documentation:
+
+<CardGroup cols={3}>
+  <Card title="GDPR Compliance" icon="shield-halved" href="/policy-engine/compliance/gdpr">
+    European data protection regulations
+  </Card>
+  <Card title="HIPAA Compliance" icon="hospital" href="/policy-engine/compliance/hipaa">
+    Healthcare privacy requirements
+  </Card>
+  <Card title="EU AI Act" icon="robot" href="/policy-engine/compliance/eu_ai_act">
+    European artificial intelligence regulations
+  </Card>
+  <Card title="NIST AI RMF" icon="sitemap" href="/policy-engine/compliance/nist-rmf">
+    AI risk management framework
+  </Card>
+  <Card title="ISO 27001" icon="certificate" href="/policy-engine/compliance/iso27001">
+    Information security management
+  </Card>
+
+</CardGroup>
+
+

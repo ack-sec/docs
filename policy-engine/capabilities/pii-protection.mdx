@@ -1,0 +1,287 @@
+---
+title: 'PII Protection Overview'
+description: 'Automatically detect and protect personally identifiable information in your AI applications'
+---
+
+AgentIQ provides comprehensive capabilities for detecting and protecting personally identifiable information (PII) in your AI applications, ensuring you maintain privacy compliance and protect sensitive user data.
+
+## What is PII Protection?
+
+PII protection automatically identifies, categorizes, and processes personal data to prevent unauthorized exposure or misuse. This includes:
+
+- **Detection**: Identifying various types of personal information
+- **Classification**: Categorizing detected information by sensitivity and type
+- **Protection**: Taking appropriate actions like redaction, masking, or rejection
+- **Auditing**: Maintaining records of PII processing for compliance
+
+<Frame>
+  ![PII Protection Workflow](/images/pii-protection-workflow.png)
+</Frame>
+
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Advanced Detection" icon="magnifying-glass">
+    Identify over 50 types of personal information using pattern matching, ML models, and contextual analysis
+  </Card>
+  <Card title="Customizable Actions" icon="sliders">
+    Configure different handling strategies (redact, mask, reject) for each PII category
+  </Card>
+  <Card title="Bi-directional Protection" icon="arrows-rotate">
+    Scan both inputs to and outputs from AI models to prevent data leakage
+  </Card>
+  <Card title="Multi-language Support" icon="language">
+    Detect PII across multiple languages and regional formats
+  </Card>
+</CardGroup>
+
+## Supported PII Types
+
+AgentIQ can detect a wide range of PII, including:
+
+### Contact Information
+- Email addresses
+- Phone numbers
+- Physical addresses
+- IP addresses
+- Social media handles
+
+### Personal Identifiers
+- Names (full, first, last)
+- Social Security Numbers (SSN)
+- Driver's license numbers
+- Passport numbers
+- Tax ID numbers
+
+### Financial Information
+- Credit card numbers
+- Bank account numbers
+- Financial account information
+- Routing numbers
+- Payment details
+
+### Health Information
+- Medical record numbers
+- Health insurance IDs
+- Patient information
+- Diagnosis codes
+- Medical conditions
+
+### Credentials
+- Passwords
+- API keys
+- Authentication tokens
+- OAuth credentials
+- Access codes
+
+## Implementation Methods
+
+There are multiple ways to implement PII protection in your application:
+
+### 1. PII Protection Decorator
+
+The simplest way to add PII protection to your functions:
+
+```python
+from mirror_sdk.ops.safety_decorators import pii_protection
+
+@pii_protection(
+    detection_types=["EMAIL", "PHONE", "SSN", "ADDRESS", "CREDIT_CARD"],
+    action="redact",
+    scan_inputs=True,
+    scan_outputs=True
+)
+async def process_customer_data(customer_info: Dict[str, Any]) -> Dict[str, Any]:
+    # Your code here - PII will be protected automatically
+    return processed_data
+```
+
+### 2. Policy Enforcement
+
+Add PII protection through security policies:
+
+```python
+@policy_monitor(name="data_privacy_policy")
+async def handle_user_data(user_data: Dict[str, Any]) -> str:
+    # The policy will enforce PII protection
+    result = process_data(user_data)
+    return result
+```
+
+The corresponding policy would include:
+
+```
+policy data_privacy_policy {
+  deny message where detect_pii(content);
+  deny response where contains_sensitive_data(result);
+  
+  check_output pii with {
+    action: "redact",
+    types: ["EMAIL", "PHONE", "SSN", "CREDIT_CARD"]
+  };
+}
+```
+
+### 3. Direct API Usage
+
+For more granular control, use the PII protection API directly:
+
+```python
+from mirror_sdk.capabilities.pii_protection import PIIDetector
+
+# Initialize detector
+pii_detector = PIIDetector(
+    detection_types=["EMAIL", "PHONE", "SSN", "CREDIT_CARD"],
+    confidence_threshold=0.8
+)
+
+# Detect PII
+detection_result = pii_detector.detect(text)
+
+# Apply protection
+protected_text = pii_detector.redact(text)
+# or
+masked_text = pii_detector.mask(text)
+```
+
+## Configuration Options
+
+### Detection Types
+
+Specify which types of PII to detect:
+
+```python
+@pii_protection(
+    detection_types=[
+        "EMAIL", 
+        "PHONE", 
+        "SSN", 
+        "ADDRESS",
+        "CREDIT_CARD",
+        "BANK_ACCOUNT",
+        "NAME",
+        "DOB"
+    ]
+)
+```
+
+Use `detection_types=["ALL"]` to detect all supported PII types.
+
+### Protection Actions
+
+Choose how to handle detected PII:
+
+- **Redact**: Replace PII with a placeholder (e.g., `[REDACTED]`)
+- **Mask**: Partially obscure PII (e.g., `j***@example.com`)
+- **Reject**: Block operations containing PII
+- **Custom**: Apply custom transformation functions
+
+```python
+@pii_protection(action="redact")  # or "mask", "reject"
+```
+
+### Custom Handlers
+
+Define custom handlers for specific PII types:
+
+```python
+def custom_email_handler(email: str) -> str:
+    domain = email.split('@')[1]
+    return f"[EMAIL@{domain}]"
+
+@pii_protection(
+    custom_handlers={
+        "EMAIL": custom_email_handler,
+        "PHONE": lambda p: f"[PHONE]"
+    }
+)
+```
+
+## Monitoring and Auditing
+
+AgentIQ automatically logs PII detection and handling for auditing purposes. The logs include:
+
+- Detection timestamp
+- PII types detected (but not the PII itself)
+- Actions taken
+- Success/failure status
+
+You can access these logs through the AgentIQ dashboard or API.
+
+## Complete Example
+
+Here's a comprehensive example of PII protection in action:
+
+```python
+import asyncio
+from typing import Dict, Any
+from mirror_sdk.ops.safety_decorators import pii_protection
+from mirror_sdk.telemetry.tracing.decorators import monitor
+
+# Custom handlers
+def custom_email_handler(email: str) -> str:
+    username, domain = email.split('@')
+    return f"{username[0]}***@{domain}"
+
+def custom_phone_handler(phone: str) -> str:
+    # Keep only last 4 digits
+    clean_phone = ''.join(c for c in phone if c.isdigit())
+    if len(clean_phone) >= 4:
+        return f"***-***-{clean_phone[-4:]}"
+    return "[PHONE]"
+
+# Apply PII protection to function
+@monitor(name="customer_data_processor", session_id="customer_service")
+@pii_protection(
+    detection_types=["EMAIL", "PHONE", "SSN", "ADDRESS", "CREDIT_CARD", "NAME"],
+    action="mask",  # Default action
+    scan_inputs=True,
+    scan_outputs=True,
+    custom_handlers={
+        "EMAIL": custom_email_handler,
+        "PHONE": custom_phone_handler,
+        "SSN": lambda ssn: "XXX-XX-" + ''.join(c for c in ssn if c.isdigit())[-4:]
+    }
+)
+async def process_customer_data(customer_info: Dict[str, Any]) -> Dict[str, Any]:
+    """Process customer information with PII protection."""
+    print(f"Processing customer data: {customer_info}")
+    
+    # In a real application, you'd process the data here
+    # The decorator handles PII protection automatically
+    
+    result = {
+        "status": "processed",
+        "customer_id": customer_info.get("customer_id", "unknown"),
+        "message": f"Thank you {customer_info.get('name', 'valued customer')}! " +
+                   f"We'll contact you at {customer_info.get('email', 'your email')}."
+    }
+    
+    return result
+
+# Main function
+async def main():
+    # Sample customer data with PII
+    customer_data = {
+        "customer_id": "CUST-12345",
+        "name": "John Smith",
+        "email": "john.smith@example.com",
+        "phone": "(555) 123-4567",
+        "ssn": "123-45-6789",
+        "address": "123 Main St, Anytown, CA 94321",
+        "credit_card": "4111-1111-1111-1111",
+        "preferences": ["email", "mobile"]
+    }
+    
+    # Process the data
+    result = await process_customer_data(customer_data)
+    
+    # Print the result (PII should be masked)
+    print("\nProcessed result:")
+    print(result)
+
+# Run the example
+if __name__ == "__main__":
+    asyncio.run(main())
+```

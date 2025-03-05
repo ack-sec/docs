@@ -1,0 +1,322 @@
+---
+title: 'AgentIQ Policy Configuration'
+description: 'Configure the AgentIQ SDK for your environment'
+---
+
+This guide explains how to configure the AgentIQ SDK for your specific environment and requirements.
+
+## Configuration Basics
+
+The AgentIQ SDK is configured using the `MirrorConfig` class, which can be initialized in several ways:
+
+```python
+from mirror_sdk import MirrorConfig
+
+# From environment variables
+config = MirrorConfig.from_env()
+
+# From a configuration file
+config = MirrorConfig.from_file("config.json")
+
+# Explicit configuration
+config = MirrorConfig(
+    api_key="your-api-key",
+    base_url="https://api.agentiq.ai",
+    project_id="your-project-id"
+)
+```
+
+## Configuration Options
+
+The `MirrorConfig` class accepts several parameters:
+
+<ResponseField name="api_key" type="string" required>
+  Your AgentIQ API key for authentication
+</ResponseField>
+
+<ResponseField name="base_url" type="string">
+  Base URL for the AgentIQ API (default: `https://api.agentiq.ai`)
+</ResponseField>
+
+<ResponseField name="project_id" type="string">
+  Your project identifier (required for multi-project accounts)
+</ResponseField>
+
+<ResponseField name="timeout" type="float">
+  Request timeout in seconds (default: 30.0)
+</ResponseField>
+
+<ResponseField name="retries" type="int">
+  Number of retry attempts for API calls (default: 3)
+</ResponseField>
+
+<ResponseField name="log_level" type="string">
+  Logging level: DEBUG, INFO, WARNING, ERROR (default: INFO)
+</ResponseField>
+
+<ResponseField name="telemetry_enabled" type="bool">
+  Whether to enable SDK telemetry (default: True)
+</ResponseField>
+
+<ResponseField name="policy_poll_interval" type="float">
+  Interval for policy polling in seconds (default: 300.0)
+</ResponseField>
+
+## Using Environment Variables
+
+You can configure the SDK using environment variables:
+
+```bash
+# Required
+export MIRROR_API_KEY="your-api-key"
+
+# Optional with defaults
+export MIRROR_BASE_URL="https://api.agentiq.ai"
+export MIRROR_PROJECT_ID="your-project-id"
+export MIRROR_TIMEOUT="30.0"
+export MIRROR_RETRIES="3"
+export MIRROR_LOG_LEVEL="INFO"
+export MIRROR_TELEMETRY_ENABLED="true"
+export MIRROR_POLICY_POLL_INTERVAL="300.0"
+```
+
+Then in your code:
+
+```python
+from mirror_sdk import MirrorConfig, MirrorSDK
+
+# Load configuration from environment variables
+config = MirrorConfig.from_env()
+
+# Initialize SDK with this configuration
+with MirrorSDK(config) as sdk:
+    # Use SDK components
+    # ...
+```
+
+## Using a Configuration File
+
+You can store your configuration in a JSON file:
+
+```json
+{
+  "api_key": "your-api-key",
+  "base_url": "https://api.agentiq.ai",
+  "project_id": "your-project-id",
+  "timeout": 30.0,
+  "retries": 3,
+  "log_level": "INFO",
+  "telemetry_enabled": true,
+  "policy_poll_interval": 300.0
+}
+```
+
+Then load it in your code:
+
+```python
+from mirror_sdk import MirrorConfig, MirrorSDK
+
+# Load configuration from file
+config = MirrorConfig.from_file("config.json")
+
+# Initialize SDK with this configuration
+with MirrorSDK(config) as sdk:
+    # Use SDK components
+    # ...
+```
+
+## Multiple Environments
+
+For applications that run in multiple environments (development, staging, production), you can use different configuration files:
+
+```python
+import os
+from mirror_sdk import MirrorConfig, MirrorSDK
+
+# Determine the environment
+env = os.environ.get("APP_ENV", "development")
+
+# Load the appropriate configuration
+config_file = f"config.{env}.json"
+config = MirrorConfig.from_file(config_file)
+
+# Initialize SDK with this configuration
+with MirrorSDK(config) as sdk:
+    # Use SDK components
+    # ...
+```
+
+## Component-Specific Configuration
+
+Some SDK components accept additional configuration:
+
+### Policy Engine Configuration
+
+```python
+from mirror_sdk import MirrorConfig
+
+# Create base configuration
+base_config = MirrorConfig.from_env()
+
+# Add policy-specific configuration
+policy_config = {
+    "policy_dir": "/path/to/policies",
+    "default_policy": "security_policy",
+    "cache_enabled": True,
+    "cache_ttl": 600  # seconds
+}
+
+# Initialize SDK with expanded configuration
+with MirrorSDK(base_config, policy_config=policy_config) as sdk:
+    policy_service = sdk.agentiq_policyeval
+    # Use policy service
+    # ...
+```
+
+### Telemetry Configuration
+
+```python
+from mirror_sdk import MirrorConfig
+
+# Create base configuration
+base_config = MirrorConfig.from_env()
+
+# Add telemetry-specific configuration
+telemetry_config = {
+    "capture_args": True,  # Capture function arguments
+    "capture_result": True,  # Capture function results
+    "sanitize_pii": True,  # Sanitize PII in telemetry
+    "sampling_rate": 1.0,  # Sample 100% of telemetry
+    "reporting_interval": 30  # seconds
+}
+
+# Initialize SDK with expanded configuration
+with MirrorSDK(base_config, telemetry_config=telemetry_config) as sdk:
+    telemetry = sdk.mirror_telemetry
+    # Use telemetry service
+    # ...
+```
+
+## Dynamic Configuration
+
+You can update configuration at runtime:
+
+```python
+from mirror_sdk import MirrorConfig, MirrorSDK
+
+# Initialize with basic configuration
+config = MirrorConfig(api_key="your-api-key")
+
+with MirrorSDK(config) as sdk:
+    # Update configuration dynamically
+    sdk.update_config(
+        timeout=60.0,
+        retries=5,
+        log_level="DEBUG"
+    )
+    
+    # Continue using SDK with updated configuration
+```
+
+## Configuration Best Practices
+
+1. **Environment Separation**: Use different configurations for development, staging, and production
+2. **Secret Management**: Store API keys securely using environment variables or a secrets manager
+3. **Configuration Validation**: Validate configuration values before using them
+4. **Default Fallbacks**: Provide sensible defaults when specific values are missing
+5. **Configuration Documentation**: Document your configuration for other developers
+
+### Secure Configuration Example
+
+```python
+import os
+from mirror_sdk import MirrorConfig, MirrorSDK
+
+def get_secure_config():
+    """Get configuration with secure handling of secrets."""
+    # Get API key from secure environment or secrets manager
+    api_key = os.environ.get("MIRROR_API_KEY")
+    if not api_key:
+        raise ValueError("MIRROR_API_KEY environment variable is required")
+    
+    # Get environment-specific settings
+    env = os.environ.get("APP_ENV", "development")
+    base_url = {
+        "development": "https://dev-api.agentiq.ai",
+        "staging": "https://staging-api.agentiq.ai",
+        "production": "https://api.agentiq.ai"
+    }.get(env, "https://api.agentiq.ai")
+    
+    # Create configuration
+    config = MirrorConfig(
+        api_key=api_key,
+        base_url=base_url,
+        project_id=os.environ.get("MIRROR_PROJECT_ID"),
+        timeout=float(os.environ.get("MIRROR_TIMEOUT", "30.0")),
+        retries=int(os.environ.get("MIRROR_RETRIES", "3")),
+        log_level=os.environ.get("MIRROR_LOG_LEVEL", "INFO")
+    )
+    
+    return config
+
+# Use the secure configuration
+try:
+    config = get_secure_config()
+    with MirrorSDK(config) as sdk:
+        # Use SDK components
+        # ...
+except ValueError as e:
+    print(f"Configuration error: {e}")
+    # Handle configuration error
+```
+
+## Configuration Troubleshooting
+
+### Debugging Configuration Issues
+
+If you're experiencing configuration issues:
+
+1. Enable debug logging:
+   ```python
+   config = MirrorConfig(log_level="DEBUG")
+   ```
+
+2. Validate configuration values:
+   ```python
+   print(f"Using API key: {config.api_key[:5]}...")
+   print(f"Base URL: {config.base_url}")
+   print(f"Project ID: {config.project_id}")
+   ```
+
+3. Check environment variables:
+   ```python
+   import os
+   for key in os.environ:
+       if key.startswith("MIRROR_"):
+           value = os.environ[key]
+           # Mask sensitive values
+           if "API_KEY" in key:
+               value = value[:5] + "..."
+           print(f"{key}={value}")
+   ```
+
+### Common Configuration Issues
+
+- **Missing API Key**: Ensure `MIRROR_API_KEY` is set correctly
+- **Connection Errors**: Verify `MIRROR_BASE_URL` points to the correct endpoint
+- **Authentication Failures**: Ensure API key is valid and not expired
+- **Project Access**: Verify your API key has access to the specified project
+
+## Next Steps
+
+<CardGroup cols={2}>
+
+  <Card title="Policy Creation" icon="shield" href="/policy-engine/creating-policies">
+    Create your first security policy
+  </Card>
+  <Card title="Telemetry" icon="chart-line" href="/policy-engine/middleware/decorators/telemetry">
+    Configure telemetry and monitoring
+  </Card>
+
+</CardGroup>
+

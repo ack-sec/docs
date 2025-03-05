@@ -1,0 +1,169 @@
+---
+title: 'Platform Overview'
+description: 'Architecture and components of the Mirror Security Platform'
+---
+
+# Mirror Security Platform Overview
+
+The Mirror Security Platform provides a comprehensive security framework for GenAI applications, addressing the unique challenges of securing AI systems while maintaining their functionality and performance.
+
+## Platform Architecture
+
+
+Our platform consists of two main products that can be used independently or together for complete protection:
+
+1. **Mirror Vectax SDK**: Provides data-level security through  encryption.
+2. **AgentIQ Policy Engine**: Delivers application-level security through policy enforcement.
+3. **Discover** : GenAI Security Scanner and Automated RedTeaming Suite. 
+
+## Mirror Vectax SDK
+
+<Info>
+  Mirror Vectax SDK enables privacy-preserving AI by providing  encryption designed for machine learning operations.
+</Info>
+
+Vectax SDK focuses on data protection with  cryptographic techniques designed specifically for AI operations:
+
+<CardGroup cols={2}>
+  <Card title="Secure Vector Operations">
+    Enterprise-grade security for vector operations with similarity-preserving encryption. Protect your embeddings while maintaining searchability.
+  </Card>
+
+  <Card title="Fine-Grained Access Control">
+    Built-in RBAC with multi-dimensional policies. Control access at role, group, and department levels with comprehensive audit trails.
+  </Card>
+
+  <Card title="Format-Preserving Encryption">
+    Encrypt sensitive data while maintaining format and searchability. Perfect for securing metadata, PII, and structured data.
+  </Card>
+
+  <Card title="Secure Agents Pipeline">
+    End-to-end security for machine learning workflows. From data ingestion to model serving, protect every step of your ML pipeline.
+  </Card>
+</CardGroup>
+
+### Key Technologies
+
+- **Similarity-Preserving Encryption (SPE)**: Allows encrypted vector similarity search
+- **Format-Preserving Encryption (FPE)**: Maintains data format while encrypting
+- **Attribute-Based Access Control (ABAC)**: Enables fine-grained permissions
+- **Secure Multi-party Computation**: Enables collaborative AI without sharing raw data
+
+## AgentIQ Policy Engine
+
+<Info>
+  The AgentIQ Policy Engine provides comprehensive governance, security, and compliance controls for AI applications.
+</Info>
+
+AgentIQ focuses on application-level security through policy definition and enforcement:
+
+<CardGroup cols={2}>
+  <Card title="Declarative Policy Grammar">
+    Define policies using a simple, readable grammar that's both powerful and intuitive.
+  </Card>
+
+  <Card title="Real-time Enforcement">
+    Apply policies at runtime to prevent violations before they occur.
+  </Card>
+
+  <Card title="Comprehensive Protection">
+    Built-in rules for PII protection, prompt safety, RAG security, and more.
+  </Card>
+
+  <Card title="Seamless Integration">
+    Apply policies through simple decorators with minimal code changes.
+  </Card>
+</CardGroup>
+
+### Key Technologies
+
+- **Policy Definition Language**: Simple yet powerful grammar for defining security rules
+- **Runtime Inspection**: Real-time inspection of AI inputs and outputs
+- **Compliance Mapping**: Automatic mapping of policies to regulatory frameworks
+- **Telemetry Collection**: Comprehensive logging and auditing capabilities
+
+## Integration Points
+
+The Mirror Security Platform integrates with your AI ecosystem at multiple levels:
+
+<Steps>
+  <Step title="Data Layer">
+    Vectax SDK secures data at rest and in transit, protecting embeddings, metadata, and model weights.
+  </Step>
+  <Step title="Application Layer">
+    AgentIQ enforces policies at the application level, monitoring inputs and outputs to AI models.
+  </Step>
+  <Step title="Infrastructure Layer">
+    Platform-wide capabilities ensure consistent security across your entire AI infrastructure.
+  </Step>
+</Steps>
+
+## Supported Integrations
+
+<Tabs>
+  <Tab title="Vector Databases">
+    - ChromaDB
+    - Pinecone
+    - Weaviate
+    - Milvus
+    - Qdrant
+    - Mongo 
+    - Vespa 
+  </Tab>
+  
+  <Tab title="LLM Providers">
+    - OpenAI
+    - Anthropic
+    - Google AI
+    - Azure OpenAI
+    - Cohere
+    - Local models 
+    - HuggingFace Models (via API)
+  </Tab>
+  
+  <Tab title="Frameworks">
+    - LangChain
+    - LlamaIndex
+    - Haystack
+    - CustomGPT
+    - Semantic Kernel
+  </Tab>
+</Tabs>
+
+## Deployment Options
+
+Mirror Security Platform offers flexible deployment options to meet your specific needs:
+
+<CardGroup cols={3}>
+  <Card title="Cloud SaaS" icon="cloud">
+    Fully managed service with no infrastructure maintenance
+  </Card>
+  
+  <Card title="Private Cloud" icon="lock">
+    Dedicated deployment in your private cloud environment
+  </Card>
+  
+  <Card title="On-Premises" icon="server">
+    Self-hosted deployment within your own data center
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quick Start Guide" icon="bolt" href="/quick-start-guide">
+    Get up and running with Mirror Security in minutes
+  </Card>
+  
+  <Card title="Vectax SDK" icon="shield-halved" href="/vectax/overview">
+    Explore the security features of Vectax SDK
+  </Card>
+  
+  <Card title="AgentIQ Policy Engine" icon="scale-balanced" href="/policy-engine/policy-engine-overview">
+    Learn how to define and enforce AI security policies
+  </Card>
+  
+  <Card title="Request Demo" icon="presentation-screen" href="http://platform.mirrorsecurity.io">
+    See Mirror Security in action with a personalized demo
+  </Card>
+</CardGroup>

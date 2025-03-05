@@ -1,0 +1,231 @@
+---
+title: 'Decorators Overview'
+description: 'Use Python decorators to enhance your AI applications with security, monitoring, and policy controls'
+---
+
+AgentIQ provides a set of powerful Python decorators that allow you to add security, monitoring, and policy enforcement capabilities to your application with minimal code changes.
+
+## Available Decorators
+
+<CardGroup cols={2}>
+  <Card title="Policy Monitor" icon="shield-check" href="/middleware/decorators/policy-monitor">
+    Enforce security and governance policies on your functions
+  </Card>
+  <Card title="Telemetry" icon="chart-line" href="/middleware/decorators/telemetry">
+    Add monitoring, logging, and analytics capabilities
+  </Card>
+  <Card title="Function Decorators" icon="code" href="/middleware/decorators/function-decorators">
+    Apply specialized functionality to specific function types
+  </Card>
+</CardGroup>
+
+## Key Benefits
+
+- **Minimal Code Changes** - Add powerful capabilities with single-line decorators
+- **Separation of Concerns** - Keep security logic separate from business logic
+- **Centralized Management** - Update policies and monitoring without changing application code
+- **Comprehensive Protection** - Apply multiple layers of protection to critical functions
+
+## Getting Started
+
+To use AgentIQ decorators, first install the SDK:
+
+```bash
+pip install mirror-sdk
+```
+
+Then import the decorators in your code:
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor, monitor
+from mirror_sdk import MirrorConfig
+```
+
+## Basic Usage
+
+### Policy Enforcement
+
+Add security and governance policies to your functions:
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+
+@policy_monitor(name="my_security_policy")
+async def generate_content(user_query: str) -> str:
+    # Your AI content generation code
+    return response
+```
+
+### Telemetry and Monitoring
+
+Add monitoring and analytics:
+
+```python
+from mirror_sdk.telemetry.tracing.decorators import monitor
+
+@monitor(name="content_generation", session_id="user_session")
+async def generate_content(user_query: str) -> str:
+    # Function is now monitored with telemetry
+    return response
+```
+
+### Combined Capabilities
+
+You can combine multiple decorators for layered functionality:
+
+```python
+@monitor(name="email_drafting", session_id="email_assistant")
+@policy_monitor(name="email_security_policy")
+async def draft_email(recipient: str, subject: str, content: str) -> str:
+    # This function has both monitoring and policy enforcement
+    return email_draft
+```
+
+## Advanced Decorator Configurations
+
+### Custom Policy Source
+
+You can specify different sources for your policies:
+
+```python
+# Policy by ID
+@policy_monitor(
+    policy_source=PolicySource(id="64f8a5c21e3b7a94d2a8c901")
+)
+
+# Policy from file
+@policy_monitor(
+    policy_source=PolicySource(path="/path/to/policy.pol")
+)
+
+# Policies from folder
+@policy_monitor(
+    policy_source=PolicySource(folder="/path/to/policies/")
+)
+```
+
+### Custom Violation Handling
+
+You can define custom behavior when policies are violated:
+
+```python
+async def my_violation_handler(violation_event, *args, **kwargs):
+    # Log the violation
+    logger.warning(f"Policy violation: {violation_event}")
+    
+    # Return a custom response
+    return {
+        "error": "Your request could not be processed due to security policies",
+        "code": "POLICY_VIOLATION",
+        "details": violation_event.metadata.get("reason")
+    }
+
+@policy_monitor(
+    name="security_policy",
+    on_policy_violation=my_violation_handler
+)
+async def process_request(data):
+    # Your function code here
+```
+
+### Telemetry with Custom Tags
+
+Add custom metadata to your telemetry:
+
+```python
+@monitor(
+    name="content_generation",
+    session_id="user_session",
+    tags={
+        "model": "gpt-4o",
+        "user_tier": "premium",
+        "feature": "blog_assistant"
+    }
+)
+async def generate_content(prompt: str) -> str:
+    # Function now includes custom tags in telemetry
+    return response
+```
+
+## Decorator Implementation
+
+AgentIQ decorators are implemented as function wrappers that add pre-processing and post-processing logic:
+
+```python
+def policy_monitor(name=None, policy_source=None, mirror_config=None, 
+                  on_policy_violation=None, session_id=None):
+    """
+    Decorator to apply policy monitoring to a function.
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            # Pre-processing: policy check on inputs
+            input_validation = await validate_inputs(args, kwargs)
+            if not input_validation.allowed:
+                return await handle_violation(input_validation)
+                
+            # Execute the original function
+            result = await func(*args, **kwargs)
+            
+            # Post-processing: policy check on outputs
+            output_validation = await validate_output(result)
+            if not output_validation.allowed:
+                return await handle_violation(output_validation)
+                
+            return result
+        return wrapper
+    return decorator
+```
+
+## Real-World Example
+
+Here's a complete example of using decorators to protect an AI assistant:
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor, monitor
+from mirror_sdk import MirrorConfig
+from openai import AsyncOpenAI
+
+# Initialize SDK configuration
+config = MirrorConfig.from_env()
+
+# Custom violation handler
+async def security_violation_handler(violation_event, *args, **kwargs):
+    logger.warning(f"Security violation: {violation_event}")
+    return "I'm sorry, but I cannot process that request due to security constraints."
+
+# Apply decorators to assistant function
+@monitor(name="customer_assistant", session_id="support_session")
+@policy_monitor(
+    name="customer_support_policy",
+    mirror_config=config,
+    on_policy_violation=security_violation_handler
+)
+async def customer_assistant(customer_id: str, query: str) -> str:
+    """Process customer queries with security and monitoring protections."""
+    # Get customer data (would be protected by policies)
+    customer_data = await get_customer_data(customer_id)
+    
+    # Prepare context for AI
+    context = f"""
+    Customer: {customer_data['name']}
+    Account Type: {customer_data['account_type']}
+    Subscription: {customer_data['subscription']}
+    History: {customer_data['previous_interactions']}
+    Query: {query}
+    """
+    
+    # Call AI model (protected by security policies)
+    client = AsyncOpenAI()
+    response = await client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {"role": "system", "content": "You are a helpful customer support assistant."},
+            {"role": "user", "content": context}
+        ]
+    )
+    
+    # Return the response (which will be validated by policies before returning)
+    return response.choices[0].message.content
+

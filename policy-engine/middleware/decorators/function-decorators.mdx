@@ -1,0 +1,394 @@
+---
+title: 'Function Decorators'
+description: 'Specialized decorators for different function types in AI applications'
+---
+
+In addition to the general-purpose `@policy_monitor` and `@monitor` decorators, AgentIQ provides specialized function decorators for specific use cases and function types.
+
+## Available Function Decorators
+
+<CardGroup cols={2}>
+  <Card title="@rag_security" icon="database">
+    Specialized security controls for Retrieval Augmented Generation
+  </Card>
+  <Card title="@prompt_safety" icon="shield-halved">
+    Focused protection against prompt injection and manipulation
+  </Card>
+  <Card title="@pii_protection" icon="user-lock">
+    Advanced PII detection and protection
+  </Card>
+  <Card title="@output_validator" icon="check-double">
+    Validates AI outputs against defined criteria
+  </Card>
+</CardGroup>
+
+## RAG Security Decorator
+
+The `@rag_security` decorator provides specialized protections for Retrieval Augmented Generation systems:
+
+```python
+from mirror_sdk.ops.rag_decorators import rag_security
+
+@rag_security(
+    verify_sources=True,
+    detect_tampering=True,
+    prevent_poisoning=True,
+    check_relevance=True
+)
+async def retrieve_and_generate(query: str, retrieval_context: Dict[str, Any]) -> str:
+    # Your RAG implementation code
+    sources = await retrieve_documents(query)
+    response = await generate_with_context(query, sources)
+    return response
+```
+
+### Configuration Options
+
+<ResponseField name="verify_sources" type="bool">
+  Validates the authenticity of retrieved sources. Default: True
+</ResponseField>
+
+<ResponseField name="detect_tampering" type="bool">
+  Detects tampering attempts in retrieval operations. Default: True
+</ResponseField>
+
+<ResponseField name="prevent_poisoning" type="bool">
+  Prevents vector and embedding poisoning. Default: True
+</ResponseField>
+
+<ResponseField name="check_relevance" type="bool">
+  Ensures retrieved content is relevant to the query. Default: True
+</ResponseField>
+
+<ResponseField name="threshold" type="float">
+  Confidence threshold for security checks (0.0-1.0). Default: 0.8
+</ResponseField>
+
+<ResponseField name="on_security_violation" type="Callable">
+  Custom handler for security violations. Default: Raises RAGSecurityException
+</ResponseField>
+
+## Prompt Safety Decorator
+
+The `@prompt_safety` decorator provides focused protection against prompt injection and related attacks:
+
+```python
+from mirror_sdk.ops.safety_decorators import prompt_safety
+
+@prompt_safety(
+    prevent_injection=True,
+    detect_jailbreak=True,
+    block_system_prompt_leaks=True
+)
+async def generate_response(prompt: str) -> str:
+    # Your generation code
+    client = AsyncOpenAI()
+    response = await client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.choices[0].message.content
+```
+
+### Configuration Options
+
+<ResponseField name="prevent_injection" type="bool">
+  Protects against prompt injection attacks. Default: True
+</ResponseField>
+
+<ResponseField name="detect_jailbreak" type="bool">
+  Detects jailbreak attempts. Default: True
+</ResponseField>
+
+<ResponseField name="block_system_prompt_leaks" type="bool">
+  Prevents system prompt disclosure. Default: True
+</ResponseField>
+
+<ResponseField name="strict_mode" type="bool">
+  Applies stricter pattern matching for higher security. Default: False
+</ResponseField>
+
+<ResponseField name="custom_patterns" type="List[str]">
+  Additional patterns to block. Default: []
+</ResponseField>
+
+## PII Protection Decorator
+
+The `@pii_protection` decorator provides advanced detection and protection of personally identifiable information:
+
+```python
+from mirror_sdk.ops.safety_decorators import pii_protection
+
+@pii_protection(
+    detection_types=["EMAIL", "PHONE", "SSN", "ADDRESS", "CREDIT_CARD"],
+    action="redact",
+    scan_inputs=True,
+    scan_outputs=True
+)
+async def process_customer_data(customer_info: Dict[str, Any]) -> Dict[str, Any]:
+    # Your data processing code
+    # PII will be automatically detected and handled according to config
+    return processed_data
+```
+
+### Configuration Options
+
+<ResponseField name="detection_types" type="List[str]">
+  Types of PII to detect. Default: All types
+</ResponseField>
+
+<ResponseField name="action" type="str">
+  Action to take on detected PII: "redact", "mask", or "reject". Default: "redact"
+</ResponseField>
+
+<ResponseField name="scan_inputs" type="bool">
+  Whether to scan function inputs for PII. Default: True
+</ResponseField>
+
+<ResponseField name="scan_outputs" type="bool">
+  Whether to scan function outputs for PII. Default: True
+</ResponseField>
+
+<ResponseField name="custom_handlers" type="Dict[str, Callable]">
+  Custom handlers for specific PII types. Default: {}
+</ResponseField>
+
+## Output Validator Decorator
+
+The `@output_validator` decorator validates AI-generated outputs against defined criteria:
+
+```python
+from mirror_sdk.ops.validation_decorators import output_validator
+
+@output_validator(
+    check_toxicity=True,
+    max_toxicity_score=0.3,
+    check_factual_consistency=True,
+    prevent_hallucinations=True
+)
+async def generate_content(prompt: str) -> str:
+    # Your content generation code
+    client = AsyncOpenAI()
+    response = await client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return response.choices[0].message.content
+```
+
+### Configuration Options
+
+<ResponseField name="check_toxicity" type="bool">
+  Whether to check for toxic content. Default: True
+</ResponseField>
+
+<ResponseField name="max_toxicity_score" type="float">
+  Maximum allowed toxicity score (0.0-1.0). Default: 0.5
+</ResponseField>
+
+<ResponseField name="check_factual_consistency" type="bool">
+  Whether to validate factual consistency. Default: True
+</ResponseField>
+
+<ResponseField name="prevent_hallucinations" type="bool">
+  Whether to detect and prevent hallucinations. Default: True
+</ResponseField>
+
+<ResponseField name="custom_validators" type="List[Callable]">
+  Additional validation functions. Default: []
+</ResponseField>
+
+## Combining Function Decorators
+
+You can combine multiple decorators for comprehensive protection:
+
+```python
+from mirror_sdk.telemetry.tracing.decorators import monitor
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+from mirror_sdk.ops.rag_decorators import rag_security
+from mirror_sdk.ops.safety_decorators import pii_protection
+
+@monitor(name="rag_content_generator", session_id="user_session")
+@policy_monitor(name="rag_security_policy")
+@rag_security(verify_sources=True, prevent_poisoning=True)
+@pii_protection(action="redact")
+async def generate_rag_content(query: str, context_id: str) -> str:
+    # Your RAG implementation with comprehensive protections
+    # 1. Telemetry monitoring
+    # 2. General security policy enforcement
+    # 3. Specialized RAG security
+    # 4. PII protection
+    
+    # Function implementation
+    return content
+```
+
+The decorators are applied in reverse order (bottom to top):
+1. First, PII protection is applied
+2. Then, RAG security controls
+3. Then, general policy enforcement
+4. Finally, telemetry monitoring
+
+## Creating Custom Function Decorators
+
+You can create custom function decorators for your specific needs:
+
+```python
+import functools
+from typing import Any, Callable, Dict
+
+def custom_decorator(**config):
+    """Custom decorator for specialized functionality."""
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            # Pre-processing logic
+            print(f"Starting {func.__name__} with config: {config}")
+            
+            # Execute the original function
+            result = await func(*args, **kwargs)
+            
+            # Post-processing logic
+            print(f"Completed {func.__name__}")
+            
+            return result
+        return wrapper
+    return decorator
+
+# Usage
+@custom_decorator(custom_param=True)
+async def my_function(data: Dict[str, Any]) -> str:
+    # Function implementation
+    return result
+```
+
+## Complete Example
+
+Here's a complete example of using specialized function decorators:
+
+```python
+import asyncio
+from typing import Dict, Any, List
+from mirror_sdk.telemetry.tracing.decorators import monitor
+from mirror_sdk.ops.rag_decorators import rag_security
+from mirror_sdk.ops.safety_decorators import prompt_safety, pii_protection
+from openai import AsyncOpenAI
+
+# Custom RAG security violation handler
+async def rag_violation_handler(violation_event, *args, **kwargs):
+    print(f"RAG security violation: {violation_event}")
+    return "I encountered an issue with the requested information sources. Please try a different query."
+
+# Apply multiple decorators to RAG function
+@monitor(name="rag_document_assistant", session_id="user_session")
+@rag_security(
+    verify_sources=True,
+    detect_tampering=True,
+    prevent_poisoning=True,
+    on_security_violation=rag_violation_handler
+)
+@prompt_safety(
+    prevent_injection=True,
+    detect_jailbreak=True
+)
+@pii_protection(
+    detection_types=["EMAIL", "PHONE", "SSN", "CREDIT_CARD"],
+    action="redact"
+)
+async def document_assistant(
+    query: str, 
+    user_id: str,
+    document_ids: List[str]
+) -> str:
+    """Process user queries against documents with comprehensive protections."""
+    print(f"Processing query: {query}")
+    
+    # 1. Retrieve documents (protected by RAG security)
+    documents = await retrieve_documents(document_ids)
+    
+    # 2. Generate context (PII in documents will be redacted)
+    context = "\n\n".join([doc["content"] for doc in documents])
+    
+    # 3. Generate response with AI (protected by prompt safety)
+    client = AsyncOpenAI()
+    
+    prompt = f"""
+    User Query: {query}
+    
+    Based on the following documents, please provide a concise answer:
+    
+    {context}
+    """
+    
+    response = await client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    
+    # The result will be automatically checked by all security layers
+    result = response.choices[0].message.content
+    return result
+
+# Helper function (in a real application, this would retrieve from a database)
+async def retrieve_documents(document_ids: List[str]) -> List[Dict[str, Any]]:
+    """Simulate document retrieval."""
+    # Normally this would access a vector database or document store
+    documents = [
+        {
+            "id": "doc1",
+            "title": "Company Overview",
+            "content": "Our company was founded in 2010 with a mission to transform how businesses use AI."
+        },
+        {
+            "id": "doc2",
+            "title": "Product Specifications",
+            "content": "The product dimensions are 10x15x2 cm and it weighs 250g. Contact support@example.com for more details."
+        }
+    ]
+    
+    # Filter to requested documents
+    return [doc for doc in documents if doc["id"] in document_ids]
+
+# Main function
+async def main():
+    try:
+        # Example 1: Safe query
+        result = await document_assistant(
+            "When was the company founded?",
+            "user_123",
+            ["doc1"]
+        )
+        print(f"Result: {result}\n")
+        
+        # Example 2: Query with potential PII exposure
+        result = await document_assistant(
+            "What is the support email?",
+            "user_123",
+            ["doc2"]
+        )
+        print(f"Result: {result}\n")
+        
+    except Exception as e:
+        print(f"Error: {e}")
+
+# Run the example
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Best Practices
+
+1. **Use Specialized Decorators**: Choose the most appropriate decorator for each function type
+2. **Layer Protection**: Combine multiple decorators for comprehensive security
+3. **Configure Appropriately**: Adjust settings based on security requirements
+4. **Handle Violations**: Provide custom handlers for better user experience
+5. **Monitor Performance**: Be aware of the performance impact of multiple decorators
+6. **Test Thoroughly**: Verify decorator behavior with various inputs
+
+## Next Steps
+
+- [Policy Monitor](/policy-engine/middleware/decorators/policy-monitor) - Learn about the general policy monitor decorator
+- [Telemetry](/policy-engine/middleware/decorators/telemetry) - Explore telemetry capabilities
+- [RAG Security](/policy-engine/capabilities/rag-quality) - Read more about RAG security features
+- [PII Protection](/policy-engine/capabilities/pii-protection) - Learn about PII protection capabilities
+

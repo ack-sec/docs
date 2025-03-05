@@ -1,0 +1,777 @@
+---
+title: 'AgentIQ  Mirror SDK Reference'
+description: 'Complete reference for the AgentIQ Mirror SDK core functionality'
+---
+
+
+The AgentIQ Mirror SDK is the core interface for interacting with AgentIQ services. This reference provides detailed information about the SDK's classes, methods, and configuration options.
+
+## MirrorSDK Class
+
+The main entry point for all AgentIQ functionality.
+
+```python
+from mirror_sdk import MirrorSDK, MirrorConfig
+
+# Initialize SDK
+config = MirrorConfig.from_env()
+with MirrorSDK(config) as sdk:
+    # Use SDK components
+    sdk.agentiq_policyeval
+    sdk.mirror_telemetry
+    # ...
+```
+
+### Constructor
+
+<ResponseField name="config" type="MirrorConfig" required>
+  SDK configuration object
+</ResponseField>
+
+<ResponseField name="policy_config" type="Dict[str, Any]">
+  Optional policy engine configuration
+</ResponseField>
+
+<ResponseField name="telemetry_config" type="Dict[str, Any]">
+  Optional telemetry configuration
+</ResponseField>
+
+### Properties
+
+<ResponseField name="agentiq" type="AgentIQClient">
+  Client for AgentIQ core services
+</ResponseField>
+
+<ResponseField name="agentiq_policyeval" type="PolicyAPIService">
+  Service for policy evaluation and management
+</ResponseField>
+
+<ResponseField name="agentiq_policy_poller" type="LocalPolicyManager">
+  Service for local policy management and polling
+</ResponseField>
+
+<ResponseField name="mirror_telemetry" type="TelemetryService">
+  Service for telemetry and monitoring
+</ResponseField>
+
+### Methods
+
+<ResponseField name="update_config" type="Callable">
+  Updates the SDK configuration dynamically
+  
+  ```python
+  sdk.update_config(timeout=60.0, retries=5)
+  ```
+</ResponseField>
+
+<ResponseField name="initialize_services" type="Callable">
+  Initializes SDK services (called automatically)
+  
+  ```python
+  sdk.initialize_services()
+  ```
+</ResponseField>
+
+<ResponseField name="shutdown" type="Callable">
+  Shuts down SDK services (called automatically when using context manager)
+  
+  ```python
+  sdk.shutdown()
+  ```
+</ResponseField>
+
+## MirrorConfig Class
+
+Configuration class for the Mirror SDK.
+
+```python
+from mirror_sdk import MirrorConfig
+
+# Create configuration
+config = MirrorConfig(
+    api_key="your-api-key",
+    base_url="https://api.agentiq.ai",
+    project_id="your-project-id"
+)
+```
+
+### Constructor Parameters
+
+<ResponseField name="api_key" type="str" required>
+  AgentIQ API key for authentication
+</ResponseField>
+
+<ResponseField name="base_url" type="str">
+  Base URL for AgentIQ API (default: `https://api.agentiq.ai`)
+</ResponseField>
+
+<ResponseField name="project_id" type="str">
+  Project identifier for multi-project accounts
+</ResponseField>
+
+<ResponseField name="timeout" type="float">
+  API request timeout in seconds (default: 30.0)
+</ResponseField>
+
+<ResponseField name="retries" type="int">
+  Number of retries for API calls (default: 3)
+</ResponseField>
+
+<ResponseField name="log_level" type="str">
+  Logging level: DEBUG, INFO, WARNING, ERROR (default: INFO)
+</ResponseField>
+
+<ResponseField name="telemetry_enabled" type="bool">
+  Whether to enable SDK telemetry (default: True)
+</ResponseField>
+
+<ResponseField name="policy_poll_interval" type="float">
+  Interval for policy polling in seconds (default: 300.0)
+</ResponseField>
+
+### Static Methods
+
+<ResponseField name="from_env" type="Callable">
+  Create configuration from environment variables
+  
+  ```python
+  config = MirrorConfig.from_env()
+  ```
+</ResponseField>
+
+<ResponseField name="from_file" type="Callable">
+  Create configuration from a JSON file
+  
+  ```python
+  config = MirrorConfig.from_file("config.json")
+  ```
+</ResponseField>
+
+### Methods
+
+<ResponseField name="to_dict" type="Callable">
+  Convert configuration to dictionary
+  
+  ```python
+  config_dict = config.to_dict()
+  ```
+</ResponseField>
+
+<ResponseField name="validate" type="Callable">
+  Validate configuration values
+  
+  ```python
+  config.validate()
+  ```
+</ResponseField>
+
+## MirrorAPIService Class
+
+Base class for API service implementations.
+
+```python
+from mirror_sdk.core.mirror_api_base import MirrorAPIService
+
+class CustomService(MirrorAPIService):
+    def __init__(self, config):
+        super().__init__(config)
+        # Custom initialization
+    
+    async def custom_method(self):
+        # Implementation
+        pass
+```
+
+### Constructor
+
+<ResponseField name="config" type="MirrorConfig" required>
+  SDK configuration
+</ResponseField>
+
+### Methods
+
+<ResponseField name="_get" type="Callable">
+  Make a GET request to the API
+  
+  ```python
+  response = self._get(endpoint, params=None)
+  ```
+</ResponseField>
+
+<ResponseField name="_post" type="Callable">
+  Make a POST request to the API
+  
+  ```python
+  response = self._post(endpoint, data=None)
+  ```
+</ResponseField>
+
+<ResponseField name="_put" type="Callable">
+  Make a PUT request to the API
+  
+  ```python
+  response = self._put(endpoint, data=None)
+  ```
+</ResponseField>
+
+<ResponseField name="_delete" type="Callable">
+  Make a DELETE request to the API
+  
+  ```python
+  response = self._delete(endpoint)
+  ```
+</ResponseField>
+
+<ResponseField name="_ensure_initialized" type="Callable">
+  Ensure the service is initialized
+  
+  ```python
+  self._ensure_initialized()
+  ```
+</ResponseField>
+
+## PolicyAPIService Class
+
+Service for interacting with the Policy Evaluation API.
+
+```python
+from mirror_sdk.ops.mirror_agentiq_policy_api import PolicyAPIService
+
+# Access through SDK
+policy_service = sdk.agentiq_policyeval
+
+# Or initialize directly
+policy_service = PolicyAPIService(config)
+```
+
+### Constructor
+
+<ResponseField name="config" type="MirrorConfig" required>
+  SDK configuration
+</ResponseField>
+
+<ResponseField name="base_dir" type="pathlib.Path">
+  Base directory for policy files
+</ResponseField>
+
+### Methods
+
+<ResponseField name="get_policy_content" type="Callable">
+  Get policy content from specified source
+  
+  ```python
+  content = await policy_service.get_policy_content(
+      PolicySource(id="policy-id")
+  )
+  ```
+</ResponseField>
+
+<ResponseField name="get_all_deployed_policies" type="Callable">
+  Get all deployed policies
+  
+  ```python
+  policies = policy_service.get_all_deployed_policies()
+  ```
+</ResponseField>
+
+<ResponseField name="save_policy" type="Callable">
+  Save a policy
+  
+  ```python
+  saved_policy = await policy_service.save_policy(
+      PolicyCreate(policy_name="My Policy", policy_text="policy content")
+  )
+  ```
+</ResponseField>
+
+<ResponseField name="deploy_policy" type="Callable">
+  Deploy a policy
+  
+  ```python
+  result = await policy_service.deploy_policy("policy-id")
+  ```
+</ResponseField>
+
+<ResponseField name="validate_policy" type="Callable">
+  Validate a policy without evaluating it
+  
+  ```python
+  validation = await policy_service.validate_policy("policy content")
+  ```
+</ResponseField>
+
+<ResponseField name="evaluate_trace" type="Callable">
+  Evaluate policy against trace data
+  
+  ```python
+  result = await policy_service.evaluate_trace(
+      policy_content, trace_data
+  )
+  ```
+</ResponseField>
+
+## TelemetryService Class
+
+Service for collecting and reporting telemetry data.
+
+```python
+from mirror_sdk.telemetry.service import TelemetryService
+
+# Access through SDK
+telemetry = sdk.mirror_telemetry
+
+# Or initialize directly
+telemetry = TelemetryService(config)
+```
+
+### Constructor
+
+<ResponseField name="config" type="MirrorConfig" required>
+  SDK configuration
+</ResponseField>
+
+<ResponseField name="telemetry_config" type="Dict[str, Any]">
+  Telemetry-specific configuration
+</ResponseField>
+
+### Methods
+
+<ResponseField name="start_span" type="Callable">
+  Start a telemetry span
+  
+  ```python
+  span = telemetry.start_span("operation_name")
+  ```
+</ResponseField>
+
+<ResponseField name="end_span" type="Callable">
+  End a telemetry span
+  
+  ```python
+  telemetry.end_span(span, status="success")
+  ```
+</ResponseField>
+
+<ResponseField name="record_event" type="Callable">
+  Record a telemetry event
+  
+  ```python
+  telemetry.record_event("event_name", metadata={"key": "value"})
+  ```
+</ResponseField>
+
+<ResponseField name="record_metric" type="Callable">
+  Record a numerical metric
+  
+  ```python
+  telemetry.record_metric("response_time", 0.235)
+  ```
+</ResponseField>
+
+<ResponseField name="record_counter" type="Callable">
+  Increment a counter metric
+  
+  ```python
+  telemetry.record_counter("api_calls", 1)
+  ```
+</ResponseField>
+
+<ResponseField name="flush" type="Callable">
+  Flush telemetry data to backend
+  
+  ```python
+  telemetry.flush()
+  ```
+</ResponseField>
+
+## LocalPolicyManager Class
+
+Manages local policy files and synchronization with the AgentIQ service.
+
+```python
+from mirror_sdk.ops.mirror_agentiq_policy_poller import LocalPolicyManager
+
+# Access through SDK
+policy_manager = sdk.agentiq_policy_poller
+
+# Or initialize directly
+policy_manager = LocalPolicyManager(config, policy_service)
+```
+
+### Constructor
+
+<ResponseField name="config" type="MirrorConfig" required>
+  SDK configuration
+</ResponseField>
+
+<ResponseField name="policy_service" type="PolicyAPIService" required>
+  Policy API service instance
+</ResponseField>
+
+<ResponseField name="base_dir" type="pathlib.Path">
+  Base directory for policy files
+</ResponseField>
+
+### Methods
+
+<ResponseField name="start" type="Callable">
+  Start policy polling (called automatically by SDK)
+  
+  ```python
+  policy_manager.start()
+  ```
+</ResponseField>
+
+<ResponseField name="stop" type="Callable">
+  Stop policy polling (called automatically by SDK)
+  
+  ```python
+  policy_manager.stop()
+  ```
+</ResponseField>
+
+<ResponseField name="trigger_fetch" type="Callable">
+  Trigger immediate policy fetch
+  
+  ```python
+  policy_manager.trigger_fetch()
+  ```
+</ResponseField>
+
+<ResponseField name="get_policy" type="Callable">
+  Get a policy by name
+  
+  ```python
+  policy = policy_manager.get_policy("policy_name")
+  ```
+</ResponseField>
+
+<ResponseField name="get_all_policies" type="Callable">
+  Get all available policies
+  
+  ```python
+  policies = policy_manager.get_all_policies()
+  ```
+</ResponseField>
+
+## PolicySource Class
+
+Represents a source for policy content.
+
+```python
+from mirror_sdk.ops.mirror_agentiq_policy_api import PolicySource
+
+# By ID
+source = PolicySource(id="policy-id")
+
+# By file path
+source = PolicySource(path="/path/to/policy.pol")
+
+# By folder path
+source = PolicySource(folder="/path/to/policies/")
+```
+
+### Constructor
+
+<ResponseField name="id" type="str">
+  Policy ID (mutually exclusive with path and folder)
+</ResponseField>
+
+<ResponseField name="path" type="str">
+  Policy file path (mutually exclusive with id and folder)
+</ResponseField>
+
+<ResponseField name="folder" type="str">
+  Policy folder path (mutually exclusive with id and path)
+</ResponseField>
+
+## PolicyCreate Class
+
+Model for creating a new policy.
+
+```python
+from mirror_sdk.ops.mirror_agentiq_policy_api import PolicyCreate
+
+policy = PolicyCreate(
+    policy_name="My Security Policy",
+    policy_text="policy content here"
+)
+```
+
+### Constructor
+
+<ResponseField name="policy_name" type="str" required>
+  Name of the policy
+</ResponseField>
+
+<ResponseField name="policy_text" type="str" required>
+  Content of the policy
+</ResponseField>
+
+## ValidationResponse Class
+
+Response from policy validation.
+
+```python
+validation = await policy_service.validate_policy("policy content")
+
+if validation.valid:
+    print("Policy is valid!")
+else:
+    print(f"Policy validation failed: {validation.diagnostics}")
+```
+
+### Properties
+
+<ResponseField name="valid" type="bool">
+  Whether the policy is valid
+</ResponseField>
+
+<ResponseField name="policy_under_eval" type="str | Dict[str, Any]">
+  Policy that was evaluated
+</ResponseField>
+
+<ResponseField name="diagnostics" type="List[Dict[str, Any]]">
+  Validation diagnostics if policy is invalid
+</ResponseField>
+
+<ResponseField name="ast" type="Dict[str, Any]">
+  Abstract syntax tree of the policy if valid
+</ResponseField>
+
+## PolicyResult Class
+
+Result of policy evaluation.
+
+```python
+result = await policy_service.evaluate_trace(policy_content, trace_data)
+
+if result.allowed:
+    print("Operation allowed!")
+else:
+    print(f"Operation denied: {result.rule_type} on {result.resource_type}")
+```
+
+### Properties
+
+<ResponseField name="allowed" type="bool">
+  Whether the operation is allowed by the policy
+</ResponseField>
+
+<ResponseField name="rule_type" type="str">
+  Type of rule that was matched (e.g., "allow", "deny")
+</ResponseField>
+
+<ResponseField name="resource_type" type="str">
+  Type of resource that was evaluated (e.g., "message", "response")
+</ResponseField>
+
+<ResponseField name="condition_result" type="bool">
+  Result of the condition evaluation
+</ResponseField>
+
+<ResponseField name="function_results" type="Dict[str, Any]">
+  Results of any functions called during evaluation
+</ResponseField>
+
+<ResponseField name="metadata" type="Dict[str, Any]">
+  Additional metadata about the evaluation
+</ResponseField>
+
+## PolicyViolationError Class
+
+Exception raised when a policy violation occurs.
+
+```python
+try:
+    result = await protected_function(data)
+    return result
+except PolicyViolationError as e:
+    print(f"Policy violation: {e.message}")
+    print(f"Diagnostics: {e.diagnostics}")
+    # Handle the violation
+```
+
+### Properties
+
+<ResponseField name="message" type="str">
+  Error message
+</ResponseField>
+
+<ResponseField name="diagnostics" type="List[Any]">
+  Detailed diagnostics about the violation
+</ResponseField>
+
+## Complete Usage Example
+
+Here's a comprehensive example showing how to use the Mirror SDK:
+
+```python
+import asyncio
+import logging
+from mirror_sdk import MirrorSDK, MirrorConfig, PolicyViolationError
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+from mirror_sdk.ops.mirror_agentiq_policy_api import PolicyCreate, PolicySource
+from mirror_sdk.telemetry.tracing.span_context_manager import PolicyViolation
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("mirror_sdk_example")
+
+# Custom violation handler
+async def security_violation_handler(violation_event: PolicyViolation, *args, **kwargs):
+    logger.warning(f"Security policy violation: {violation_event}")
+    return {
+        "error": "Your request was blocked by security policies",
+        "details": violation_event.metadata.get("reason", "Unknown violation")
+    }
+
+# Create, deploy, and use a policy
+async def main():
+    # Create configuration
+    config = MirrorConfig.from_env()
+    
+    # Initialize SDK
+    with MirrorSDK(config) as sdk:
+        # Get policy service
+        policy_service = sdk.agentiq_policyeval
+        
+        # Create a policy
+        policy_content = """
+        @version "1.0.0";
+        @author "Security Team";
+        @last_modified "2024-03-01";
+        
+        policy security_policy {
+            // Prevent PII exposure
+            deny message where detect_pii(content);
+            
+            // Block excessive content
+            deny message where length(content) > 10000;
+            
+            // Apply prompt safety
+            check_prompt injection with {
+                strict_mode: true,
+                threshold: 0.85
+            };
+            
+            // Ensure output safety
+            check_output sensitive_data;
+            
+            // Allow everything else
+            allow message where true;
+        }
+        """
+        
+        # Save and deploy the policy
+        try:
+            saved_policy = await policy_service.save_policy(
+                PolicyCreate(policy_name="Security Policy", policy_text=policy_content)
+            )
+            
+            if saved_policy:
+                policy_id = saved_policy.get("_id")
+                if policy_id:
+                    deploy_result = await policy_service.deploy_policy(policy_id)
+                    logger.info(f"Policy deployed: {deploy_result}")
+        except Exception as e:
+            logger.error(f"Failed to save/deploy policy: {e}")
+        
+        # Use the policy with a decorator
+        @policy_monitor(
+            name="Security Policy",
+            mirror_config=config,
+            on_policy_violation=security_violation_handler
+        )
+        async def process_user_data(user_data):
+            # This function is protected by the security policy
+            logger.info(f"Processing user data: {user_data}")
+            
+            # Processing logic
+            result = {
+                "status": "success",
+                "processed": True,
+                "message": f"Hello {user_data.get('name', 'User')}!"
+            }
+            
+            return result
+        
+        # Test with safe data
+        safe_data = {
+            "name": "John Doe",
+            "preferences": ["technology", "sports"]
+        }
+        
+        try:
+            result = await process_user_data(safe_data)
+            logger.info(f"Result: {result}")
+        except PolicyViolationError as e:
+            logger.error(f"Policy violation: {e}")
+        
+        # Test with unsafe data (contains PII)
+        unsafe_data = {
+            "name": "Jane Smith",
+            "email": "jane.smith@example.com",
+            "ssn": "123-45-6789"
+        }
+        
+        try:
+            result = await process_user_data(unsafe_data)
+            logger.info(f"Result: {result}")
+        except PolicyViolationError as e:
+            logger.error(f"Policy violation: {e}")
+
+# Run the example
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Error Handling
+
+The SDK provides several error types for handling different situations:
+
+1. **MirrorAPIException**: Base exception for API errors
+2. **PolicyViolationError**: Raised when a policy violation occurs
+3. **AuthenticationError**: Raised for authentication issues
+4. **ConfigurationError**: Raised for configuration problems
+5. **ValidationError**: Raised when validation fails
+
+Example error handling:
+
+```python
+from mirror_sdk import (
+    MirrorAPIException, PolicyViolationError, 
+    AuthenticationError, ConfigurationError
+)
+
+try:
+    # SDK operations
+    result = await sdk.agentiq_policyeval.evaluate_trace(policy, trace)
+except AuthenticationError as e:
+    # Handle authentication issues
+    logger.error(f"Authentication failed: {e}")
+    # Renew API key or re-authenticate
+except PolicyViolationError as e:
+    # Handle policy violations
+    logger.warning(f"Policy violation: {e.message}")
+    # Return error response or take appropriate action
+except ConfigurationError as e:
+    # Handle configuration issues
+    logger.error(f"Configuration error: {e}")
+    # Fix configuration
+except MirrorAPIException as e:
+    # Handle other API errors
+    logger.error(f"API error: {e}")
+    # General error handling
+except Exception as e:
+    # Handle unexpected errors
+    logger.error(f"Unexpected error: {e}")
+    # Fallback error handling
+```
+
+## Next Steps
+
+- [Policy Grammar](/policy-engine/policy-grammar) - Learn about policy syntax
+- [Decorators](/middleware/decorators/decorator-overview) - Use SDK decorators
+- [Telemetry API](/api-reference/sdk-reference/telemetry-api) - Explore telemetry capabilities
+

@@ -1,0 +1,270 @@
+---
+title: 'Email Assistant Policy Examples'
+description: 'Security and governance policies for AI email assistants'
+---
+
+
+This guide provides practical examples of policies for securing AI-powered email assistants. These examples can be adapted for your specific requirements.
+
+## Basic Email Security Policy
+
+This policy implements fundamental security controls for an email assistant:
+
+```python
+@version "1.0.0";
+@author "Security Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "Basic security policy for email assistants";
+  severity: HIGH;
+  category: "Email Security";
+}
+
+policy email_security_basic {
+  // Prevent PII leakage
+  deny response where detect_pii(content);
+  
+  // Restrict email domains
+  deny message where !is_approved_domain(recipient_domain);
+  
+  // Limit email volume
+  deny message where count_emails_sent(user_id, "daily") > 100;
+  
+  // Prevent excessive content
+  deny message where length(content) > 10000;
+  
+  // Allow everything else
+  allow message where true;
+}
+```
+
+## Advanced Email Protection
+
+This policy adds more sophisticated controls including RAG security and prompt protection:
+
+```python
+@version "1.0.0";
+@author "Security Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "Advanced email assistant security policy";
+  severity: HIGH;
+  category: "Email Security";
+}
+
+policy email_security_advanced {
+  // Basic protections
+  deny message where detect_pii(content);
+  deny message where !is_approved_domain(recipient_domain);
+  
+  // Prompt injection protection
+  check_prompt injection with {
+    threshold: 0.8,
+    strict_mode: true,
+    patterns: [
+      "ignore previous instructions",
+      "system prompt",
+      "you are now",
+      "default settings"
+    ]
+  };
+  
+  // RAG security for email drafting based on documentation
+  check_rag source_verification with {
+    threshold: 0.9,
+    require_validation: true
+  };
+  
+  // Output validation
+  check_output sensitive_data with {
+    categories: ["financial", "medical", "personal", "confidential"]
+  };
+  
+  // Prevent hallucinations
+  check_output factual_consistency with {
+    min_score: 0.85,
+    check_citations: true
+  };
+  
+  // Model behavior checks
+  check_model instruction_adherence with {
+    min_compliance: 0.9
+  };
+  
+  // Allow properly verified operations
+  allow message where true;
+}
+```
+
+## Enterprise Compliance Policy
+
+This policy focuses on regulatory compliance for business email communications:
+
+```python
+@version "1.0.0";
+@author "Compliance Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "Enterprise compliance policy for email communications";
+  severity: HIGH;
+  category: "Compliance";
+}
+
+policy email_compliance {
+  // Legal disclaimer enforcement
+  deny response where !contains(content, required_disclaimer());
+  
+  // GDPR compliance
+  deny response where contains_eu_pii(content) && !has_consent(user_id, "gdpr_email");
+  
+  // Financial disclosure rules
+  deny message where is_financial_advice(content) && !has_disclosure(content);
+  
+  // Data sovereignty
+  deny message where recipient_country(to) == "restricted";
+  
+  // Data classification
+  deny message where document_classification(attachments) > user_clearance(user_id);
+  
+  // Retention requirements
+  action log_for_retention(message_id, "email", 7) with {
+    encryption: "AES-256",
+    include_metadata: true
+  };
+  
+  // Security checks
+  check_output sensitive_data;
+  check_prompt injection;
+  
+  // Allow compliant emails
+  allow message where true;
+}
+```
+
+## Email Assistant with Domain-Specific Controls
+
+This policy adds specialized rules for different business departments:
+
+```python
+@version "1.0.0";
+@author "Security & Compliance";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "Domain-specific controls for email assistants";
+  severity: HIGH;
+  category: "Department Security";
+}
+
+policy email_domain_specific {
+  // Base protection
+  deny message where detect_pii(content);
+  check_prompt injection;
+  
+  // HR department restrictions
+  if user_department(user_id) == "HR" then {
+    policy hr_policy {
+      deny message where contains_employee_data(content) && !is_hr_recipient(to);
+      deny message where contains(subject, "salary") || contains(subject, "performance");
+      allow message where is_hr_approved_template(template_id);
+    }
+  }
+  
+  // Finance department restrictions
+  if user_department(user_id) == "Finance" then {
+    policy finance_policy {
+      deny message where contains_financial_data(content) && !is_finance_recipient(to);
+      deny message where contains(content, "revenue") || contains(content, "forecast");
+      check_output financial_data with {
+        detection_threshold: 0.9,
+        restricted_terms: ["confidential", "unreleased", "quarterly"]
+      };
+    }
+  }
+  
+  // Legal department controls
+  if user_department(user_id) == "Legal" then {
+    policy legal_policy {
+      deny message where !has_confidentiality_notice(content);
+      deny message where contains(attachment_names, ".pdf") && !is_watermarked(attachments);
+      action log_all_communications(message_id, user_id, timestamp);
+    }
+  }
+  
+  // Allow everything else
+  allow message where true;
+}
+```
+
+## Implementation Example
+
+Here's how to apply the email security policy using the Python SDK:
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+from mirror_sdk import MirrorConfig
+
+# Initialize configuration
+config = MirrorConfig.from_env()
+
+# Custom violation handler
+async def email_violation_handler(violation_event, *args, **kwargs):
+    logger.warning(f"Email policy violation: {violation_event}")
+    return {
+        "error": "Your email couldn't be processed due to security policies",
+        "details": violation_event.metadata.get("reason", "Unknown policy violation")
+    }
+
+# Apply policy to email drafting function
+@policy_monitor(
+    name="email_security_advanced",
+    mirror_config=config,
+    on_policy_violation=email_violation_handler,
+    session_id="email_assistant"
+)
+async def draft_email_response(user_id: str, email_thread: dict, query: str) -> str:
+    """
+    Drafts an email response based on the thread and user query.
+    Protected by the email security policy.
+    """
+    # Email drafting logic
+    # This function is now protected by the policy
+    
+    client = AsyncOpenAI()
+    
+    prompt = f"""
+    Email Thread:
+    {email_thread}
+    
+    User Query:
+    {query}
+    
+    Draft a professional email response addressing the query.
+    """
+    
+    response = await client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    
+    return response.choices[0].message.content
+```
+
+## Best Practices for Email Assistant Policies
+
+1. **Layer your defenses** - Use multiple protection mechanisms
+2. **Focus on data exfiltration** - Email is a primary vector for data leakage
+3. **Consider compliance requirements** - Different industries have specific regulations
+4. **Add contextual awareness** - Adjust rules based on sender, recipient, and content
+5. **Implement audit logging** - Keep records of all security-relevant events
+6. **Test thoroughly** - Validate policies against real-world scenarios
+
+
+## Next Steps
+
+- [Customer Support Policies](/policy-engine/policy-examples/customer-support) - Security policies for support agents
+- [Content Moderation Policies](/policy-engine/policy-examples/content-moderation) - Policies for content moderation systems
+- [Financial Analysis Policies](/policy-engine/policy-examples/financial-analysis) - Controls for financial systems

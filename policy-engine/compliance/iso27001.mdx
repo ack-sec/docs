@@ -1,0 +1,690 @@
+---
+title: 'ISO 27001 Compliance'
+description: 'Implementing information security controls for AI applications using AgentIQ Policy Engine'
+---
+
+This guide provides detailed instructions for implementing ISO 27001 information security controls for AI applications using the AgentIQ Policy Engine.
+
+## ISO 27001 Overview
+
+ISO 27001 is an international standard for managing information security. It specifies the requirements for establishing, implementing, maintaining, and continually improving an information security management system (ISMS) within an organization. The standard is organized around a comprehensive set of controls across multiple domains.
+
+<CardGroup cols={2}>
+  <Card title="Risk Assessment" icon="chart-line">
+    Systematic approach to identifying and evaluating information security risks
+  </Card>
+  <Card title="Security Policy" icon="shield-check">
+    Established policies that provide management direction and support
+  </Card>
+  <Card title="Asset Management" icon="database">
+    Inventory and classification of information assets
+  </Card>
+  <Card title="Access Control" icon="lock">
+    Implementation of controls to restrict access to information
+  </Card>
+  <Card title="Cryptography" icon="key">
+    Encryption and key management for data protection
+  </Card>
+  <Card title="Operations Security" icon="server">
+    Secure operation of information processing facilities
+  </Card>
+  <Card title="Communications Security" icon="network-wired">
+    Network and information transfer protection
+  </Card>
+  <Card title="Supplier Relationships" icon="handshake">
+    Security requirements for third-party service providers
+  </Card>
+</CardGroup>
+
+## Key ISO 27001 Controls for AI Systems
+
+AI systems present unique security challenges that ISO 27001 can address:
+
+1. **Information Classification**: Properly classify AI training data and outputs
+2. **Access Control**: Restrict access to AI models and sensitive data
+3. **Cryptographic Controls**: Protect data in transit and at rest
+4. **Security Testing**: Validate AI system security
+5. **Secure Development**: Implement secure AI development practices
+6. **Incident Management**: Respond to AI security incidents
+7. **Supplier Management**: Ensure third-party AI components are secure
+8. **Compliance**: Meet regulatory requirements for AI systems
+
+## Implementation with AgentIQ
+
+### 1. Information Classification and Handling
+
+Implement information classification for AI data:
+
+```python
+@version "1.0.0";
+@author "Security Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "ISO 27001 information classification policy";
+  severity: HIGH;
+  category: "Information Security";
+  compliance_mappings: {
+    "iso_standard": ["ISO/IEC 27001:A.8.2"]
+  }
+}
+
+policy iso27001_information_classification {
+  // Data classification validation
+  deny processing where !has_classification(data_assets);
+  
+  // Classification-based handling
+  deny access where data_classification(requested_asset) > user_clearance(user_id);
+  
+  // Enforce handling procedures
+  deny action where data_classification(affected_asset) == "confidential" && 
+                  !follows_confidential_procedures(action_type, action_details);
+  
+  // Transfer controls based on classification
+  deny transfer where data_classification(transfer_data) == "restricted" && 
+                   !has_approved_transfer_method(transfer_method, "restricted");
+  
+  // Labeling requirements
+  deny document_creation where data_classification(document_content) != "public" && 
+                            !has_classification_label(document_metadata);
+  
+  // Declassification controls
+  deny declassification where !has_declassification_authority(user_id, data_classification(target_asset));
+}
+```
+
+#### Python Implementation
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+
+@policy_monitor(name="iso27001_information_classification")
+async def process_ai_data(user_id, data_assets, processing_details):
+    """
+    Process AI data with ISO 27001 classification controls.
+    Classification validation occurs automatically via the policy.
+    """
+    # Processing with verified classification
+    result = await perform_processing(data_assets, processing_details)
+    return result
+```
+
+### 2. Access Control Implementation
+
+Implement strict access controls for AI systems:
+
+```python
+policy iso27001_access_control {
+  // User registration and de-registration
+  action manage_user_access(user_id, access_changes) with {
+    approval_required: true,
+    formal_process: true,
+    documentation_required: true,
+    review_frequency: 90  // days
+  };
+  
+  // Privilege management
+  deny privilege_assignment where !has_authorization(approver_id, "privilege_management");
+  
+  // Privileged access controls
+  deny privileged_access where !is_using_mfa(user_id);
+  
+  // Password management
+  action enforce_password_quality(password, user_context) with {
+    min_length: 12,
+    complexity_requirements: true,
+    common_password_check: true,
+    rotation_period: 90,  // days
+    history_restriction: 12
+  };
+  
+  // Access review
+  action review_access_rights(review_details) with {
+    review_frequency: 90,  // days
+    privilege_review_frequency: 30,  // days
+    documentation_required: true,
+    revocation_workflow: true
+  };
+  
+  // Network access control
+  deny network_access where !is_approved_network(source_network);
+  
+  // Application access control
+  deny application_access where !has_application_permission(user_id, application_id);
+}
+```
+
+### 3. Cryptographic Controls
+
+Implement cryptographic protections for AI data:
+
+```python
+policy iso27001_cryptography {
+  // Encryption policy
+  deny data_storage where data_classification(stored_data) != "public" && 
+                        !is_encrypted(stored_data);
+  
+  // Transmission encryption
+  deny data_transmission where data_classification(transmitted_data) != "public" && 
+                             !is_encrypted_channel(transmission_channel);
+  
+  // Key management
+  action manage_cryptographic_keys(key_operation, key_details) with {
+    key_generation_requirements: {
+      "min_length": {
+        "symmetric": 256,
+        "asymmetric": 2048,
+        "elliptic_curve": 256
+      },
+      "approved_algorithms": [
+        "AES-256-GCM", "RSA-2048", "ECDSA-P256", 
+        "SHA-256", "SHA-384", "SHA-512"
+      ]
+    },
+    key_storage_requirements: {
+      "use_hsm": data_classification(key_details.protected_data) == "restricted",
+      "encryption": true,
+      "access_restriction": true
+    },
+    key_rotation_frequency: {
+      "confidential": 365,  // days
+      "restricted": 180     // days
+    },
+    key_backup_required: true,
+    key_destruction_verification: true
+  };
+  
+  // Non-repudiation
+  deny document_signing where !is_approved_signing_method(signing_method);
+}
+```
+
+### 4. Operations Security
+
+Implement operational security controls:
+
+```
+policy iso27001_operations_security {
+  // Operating procedures
+  deny procedure_change where !has_documented_procedure(procedure_id);
+  
+  // Change management
+  action manage_change(change_details) with {
+    approval_required: true,
+    impact_assessment_required: true,
+    rollback_plan_required: true,
+    testing_required: change_details.risk_level != "low",
+    documentation_required: true
+  };
+  
+  // Capacity management
+  action monitor_capacity(resource_metrics) with {
+    threshold_monitoring: true,
+    forecasting_required: true,
+    alert_thresholds: {
+      "warning": 70,  // percent
+      "critical": 90   // percent
+    },
+    review_frequency: 30  // days
+  };
+  
+  // Malware protection
+  deny system_operation where !has_active_protection(system_id, "malware");
+  
+  // Backup
+  action verify_backup(backup_details) with {
+    backup_frequency: {
+      "critical": 24,    // hours
+      "important": 168,  // hours (1 week)
+      "normal": 720      // hours (30 days)
+    },
+    verification_required: true,
+    encryption_required: true,
+    offsite_storage_required: backup_details.classification != "normal"
+  };
+  
+  // Logging and monitoring
+  action configure_logging(system_id, log_configuration) with {
+    required_events: [
+      "authentication", "authorization", "system_changes", 
+      "data_access", "malfunction", "security_events"
+    ],
+    minimum_details: [
+      "timestamp", "user_id", "event_type", 
+      "success_status", "source", "affected_resource"
+    ],
+    retention_period: 365,  // days
+    clock_synchronization: true
+  };
+}
+```
+
+### 5. Communications Security
+
+Implement network and communication security:
+
+```python
+policy iso27001_communications_security {
+  // Network controls
+  deny network_connection where !complies_with_network_policy(connection_details);
+  
+  // Network segregation
+  deny cross_network_access where !is_authorized_cross_network(source_network, target_network, access_purpose);
+  
+  // Information transfer
+  action secure_information_transfer(transfer_details) with {
+    encryption_required: transfer_details.classification != "public",
+    formal_agreements_required: transfer_details.external,
+    transfer_documentation_required: true,
+    recipient_verification_required: true,
+    protection_from_interception: true
+  };
+  
+  // API security
+  deny api_exposure where !has_api_security_review(api_id);
+  
+  // Web security
+  deny web_deployment where !passed_security_scan(web_application_id);
+}
+```
+
+### 6. System Acquisition and Development
+
+Implement secure development for AI systems:
+
+```
+policy iso27001_system_development {
+  // Security requirements
+  deny system_development where !has_security_requirements(system_id);
+  
+  // Secure development
+  action enforce_secure_development(development_details) with {
+    secure_coding_standards: true,
+    peer_review_required: true,
+    security_testing_required: true,
+    vulnerability_scanning_required: true,
+    dependency_verification_required: true
+  };
+  
+  // Separation of environments
+  deny production_deployment where !has_passed_staging(system_id);
+  
+  // Test data protection
+  deny test_data_usage where contains_production_data(test_dataset) && !is_anonymized(test_dataset);
+  
+  // Source code security
+  deny code_release where !passed_code_security_review(code_version);
+  
+  // AI-specific validation
+  action validate_ai_model(model_id, validation_details) with {
+    bias_testing_required: true,
+    adversarial_testing_required: true,
+    performance_boundaries_defined: true,
+    explainability_requirements_met: true,
+    model_documentation_required: true
+  };
+}
+```
+
+### 7. Incident Management
+
+Implement security incident management for AI systems:
+
+```python
+policy iso27001_incident_management {
+  // Incident response planning
+  action maintain_incident_response_plan(plan_details) with {
+    required_components: [
+      "roles_responsibilities", "detection_procedures", 
+      "reporting_procedures", "response_procedures",
+      "recovery_procedures", "communication_plan"
+    ],
+    review_frequency: 365,  // days
+    testing_frequency: 180,  // days
+    approval_required: true
+  };
+  
+  // Incident reporting
+  action report_security_incident(incident_details) with {
+    reporting_deadline: 24,  // hours
+    required_information: [
+      "incident_type", "affected_systems", "detection_time",
+      "impact_assessment", "initial_response_actions"
+    ],
+    notification_targets: incident_details.severity == "high" ? 
+      ["security_team", "executive_management", "legal", "pr"] : 
+      ["security_team"]
+  };
+  
+  // Incident assessment
+  action assess_security_incident(incident_details) with {
+    classification_criteria: [
+      "data_exposure", "system_impact", "operational_impact",
+      "reputational_impact", "financial_impact"
+    ],
+    documentation_required: true
+  };
+  
+  // Incident response
+  action respond_to_incident(incident_details, response_plan) with {
+    containment_required: true,
+    evidence_collection_required: true,
+    coordination_procedures: true,
+    escalation_criteria_defined: true
+  };
+  
+  // Learning from incidents
+  action conduct_incident_review(incident_details, review_findings) with {
+    root_cause_analysis_required: true,
+    preventive_actions_required: true,
+    documentation_required: true,
+    follow_up_verification_required: true
+  };
+}
+```
+
+### 8. Supplier Management
+
+Implement security controls for third-party AI components:
+
+```python
+policy iso27001_supplier_management {
+  // Supplier security policy
+  deny supplier_engagement where !has_security_requirements(engagement_details);
+  
+  // Supplier agreements
+  deny supplier_onboarding where !has_security_agreement(supplier_id);
+  
+  // Supply chain security
+  action assess_supplier_security(supplier_id, assessment_details) with {
+    assessment_frequency: 365,  // days
+    assessment_methods: [
+      "questionnaire", "documentation_review", 
+      "certification_verification", "audit"
+    ],
+    minimum_security_level: engagement_details.risk_level == "high" ? 
+      "comprehensive" : "basic",
+    documentation_required: true
+  };
+  
+  // Monitoring supplier services
+  action monitor_supplier_performance(supplier_id, monitoring_details) with {
+    monitoring_frequency: 90,  // days
+    security_incident_reporting_required: true,
+    service_level_monitoring_required: true,
+    compliance_verification_required: true
+  };
+  
+  // Managing changes to supplier services
+  action manage_supplier_change(supplier_id, change_details) with {
+    impact_assessment_required: true,
+    security_review_required: true,
+    approval_required: true,
+    documentation_required: true
+  };
+}
+```
+
+## Complete Implementation Example
+
+Here's a comprehensive example of applying ISO 27001 controls to an AI system:
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+from mirror_sdk.compliance.iso27001 import ISO27001Assessment
+from mirror_sdk import MirrorConfig, MirrorSDK
+
+# Configuration
+config = MirrorConfig.from_env()
+
+# Main application with ISO 27001 compliance
+class ISO27001CompliantSystem:
+    def __init__(self, system_id):
+        self.system_id = system_id
+        self.sdk = MirrorSDK(config)
+        self.iso_assessment = ISO27001Assessment(system_id=system_id)
+    
+    @policy_monitor(name="iso27001_information_classification")
+    async def process_data(self, user_id, data_assets, processing_details):
+        """Process data with information classification controls."""
+        # Classification validation happens automatically via policy
+        result = await self.perform_processing(data_assets, processing_details)
+        return result
+    
+    @policy_monitor(name="iso27001_access_control")
+    async def access_ai_model(self, user_id, model_id, access_purpose):
+        """Access AI model with access control verification."""
+        # Access control validation happens automatically via policy
+        access_result = await self.grant_model_access(user_id, model_id, access_purpose)
+        return access_result
+    
+    @policy_monitor(name="iso27001_cryptography")
+    async def store_sensitive_data(self, data, classification, storage_details):
+        """Store sensitive data with cryptographic controls."""
+        # Encryption requirements enforced automatically via policy
+        storage_result = await self.encrypt_and_store(data, classification, storage_details)
+        return storage_result
+    
+    @policy_monitor(name="iso27001_operations_security")
+    async def deploy_system_change(self, change_details):
+        """Deploy system change with change management controls."""
+        # Change management controls enforced automatically via policy
+        deployment_result = await self.implement_change(change_details)
+        return deployment_result
+    
+    @policy_monitor(name="iso27001_communications_security")
+    async def expose_ai_api(self, api_details):
+        """Expose AI API with communication security controls."""
+        # Communication security enforced automatically via policy
+        api_deployment = await self.secure_api_deployment(api_details)
+        return api_deployment
+    
+    @policy_monitor(name="iso27001_system_development")
+    async def develop_ai_model(self, model_details, development_plan):
+        """Develop AI model with secure development controls."""
+        # Secure development practices enforced automatically via policy
+        development_result = await self.implement_development(model_details, development_plan)
+        
+        # Validate the model before release
+        validation_result = await self.validate_ai_model(
+            model_id=development_result["model_id"],
+            validation_details={
+                "bias_testing": True,
+                "adversarial_testing": True,
+                "performance_boundaries": {
+                    "accuracy_minimum": 0.95,
+                    "latency_maximum": 200  # ms
+                }
+            }
+        )
+        
+        return {**development_result, "validation": validation_result}
+    
+    @policy_monitor(name="iso27001_incident_management")
+    async def handle_security_incident(self, incident_details):
+        """Handle security incident with incident management controls."""
+        # Incident management procedures enforced automatically via policy
+        
+        # Report the incident
+        report_result = await self.report_security_incident(incident_details)
+        
+        # Assess the incident
+        assessment_result = await self.assess_security_incident(
+            incident_details,
+            {
+                "classification_criteria": [
+                    "data_exposure", "system_impact", "operational_impact",
+                    "reputational_impact", "financial_impact"
+                ]
+            }
+        )
+        
+        # Respond to the incident
+        response_result = await self.respond_to_incident(
+            incident_details,
+            {
+                "containment_actions": ["isolate_affected_systems", "block_attack_vector"],
+                "evidence_collection": True,
+                "notification_targets": assessment_result["severity"] == "high" ? 
+                    ["security_team", "executive_management"] : ["security_team"]
+            }
+        )
+        
+        return {
+            "report": report_result,
+            "assessment": assessment_result,
+            "response": response_result
+        }
+    
+    @policy_monitor(name="iso27001_supplier_management")
+    async def integrate_third_party_component(self, supplier_id, component_details):
+        """Integrate third-party AI component with supplier management controls."""
+        # Supplier management controls enforced automatically via policy
+        
+        # Verify supplier security assessment
+        assessment_result = await self.assess_supplier_security(
+            supplier_id,
+            {
+                "assessment_methods": ["questionnaire", "certification_verification"],
+                "minimum_security_level": component_details["risk_level"] == "high" ? 
+                    "comprehensive" : "basic"
+            }
+        )
+        
+        if assessment_result["status"] == "approved":
+            # Proceed with integration
+            integration_result = await self.implement_integration(supplier_id, component_details)
+            return {**assessment_result, "integration": integration_result}
+        else:
+            return {**assessment_result, "integration_status": "rejected"}
+    
+    async def conduct_iso27001_assessment(self):
+        """Conduct ISO 27001 compliance assessment."""
+        assessment_results = await self.iso_assessment.evaluate(
+            domains=[
+                "information_classification",
+                "access_control",
+                "cryptography",
+                "operations_security",
+                "communications_security",
+                "system_development",
+                "incident_management",
+                "supplier_management"
+            ]
+        )
+        
+        report = await self.iso_assessment.generate_report(
+            include_evidence=True,
+            include_remediation=True,
+            format="pdf"
+        )
+        
+        return assessment_results, report
+    
+    # Helper methods (implementation details)
+    async def perform_processing(self, data_assets, processing_details):
+        # Data processing implementation
+        return {"processing_result": "Data processed with classification controls"}
+    
+    async def grant_model_access(self, user_id, model_id, access_purpose):
+        # Access granting implementation
+        return {"access_status": "granted", "access_level": "read"}
+    
+    async def encrypt_and_store(self, data, classification, storage_details):
+        # Encryption and storage implementation
+        return {"storage_status": "completed", "encryption_algorithm": "AES-256-GCM"}
+    
+    async def implement_change(self, change_details):
+        # Change implementation
+        return {"change_status": "deployed", "rollback_plan": "available"}
+    
+    async def secure_api_deployment(self, api_details):
+        # API deployment implementation
+        return {"deployment_status": "completed", "security_controls": ["TLS", "API-key", "rate-limiting"]}
+    
+    async def implement_development(self, model_details, development_plan):
+        # Development implementation
+        return {"development_status": "completed", "model_id": "model_123"}
+    
+    async def validate_ai_model(self, model_id, validation_details):
+        # Model validation implementation
+        return {"validation_status": "passed", "bias_score": 0.02, "adversarial_robustness": 0.96}
+    
+    async def report_security_incident(self, incident_details):
+        # Incident reporting implementation
+        return {"report_status": "submitted", "incident_id": "incident_123"}
+    
+    async def assess_security_incident(self, incident_details, assessment_criteria):
+        # Incident assessment implementation
+        return {"assessment_complete": True, "severity": "medium", "impact_score": 6.5}
+    
+    async def respond_to_incident(self, incident_details, response_plan):
+        # Incident response implementation
+        return {"response_status": "in_progress", "containment_status": "successful"}
+    
+    async def assess_supplier_security(self, supplier_id, assessment_details):
+        # Supplier assessment implementation
+        return {"status": "approved", "security_level": "comprehensive", "findings": []}
+    
+    async def implement_integration(self, supplier_id, component_details):
+        # Integration implementation
+        return {"integration_status": "completed", "component_id": "component_123"}
+```
+
+## Policy Mappings to ISO 27001 Controls
+
+AgentIQ's policy rules can be directly mapped to ISO 27001 controls for traceability:
+
+| ISO 27001 Control | Policy Rule | Implementation |
+|-------------------|-------------|----------------|
+| A.8.2 Information Classification | `deny processing where !has_classification(data_assets)` | Classification validation |
+| A.9.2 User Access Management | `action manage_user_access()` | User access lifecycle |
+| A.9.4 System and Application Access Control | `deny application_access where !has_application_permission()` | Access restrictions |
+| A.10.1 Cryptographic Controls | `deny data_storage where !is_encrypted(stored_data)` | Encryption requirements |
+| A.12.1 Operational Procedures | `deny procedure_change where !has_documented_procedure()` | Documented procedures |
+| A.12.2 Protection from Malware | `deny system_operation where !has_active_protection()` | Malware protection |
+| A.12.3 Backup | `action verify_backup()` | Backup procedures |
+| A.12.4 Logging and Monitoring | `action configure_logging()` | Logging configuration |
+| A.12.6 Technical Vulnerability Management | `deny code_release where !passed_code_security_review()` | Vulnerability management |
+| A.13.1 Network Security Management | `deny network_connection where !complies_with_network_policy()` | Network controls |
+| A.13.2 Information Transfer | `action secure_information_transfer()` | Secure transfers |
+| A.14.1 Security Requirements of Systems | `deny system_development where !has_security_requirements()` | Security requirements |
+| A.14.2 Security in Development | `action enforce_secure_development()` | Secure development |
+| A.15.1 Supplier Relationships | `deny supplier_onboarding where !has_security_agreement()` | Supplier agreements |
+| A.16.1 Information Security Incidents | `action report_security_incident()` | Incident management |
+
+## Compliance Verification Checklist
+
+Use this checklist to verify your ISO 27001 implementation for AI systems:
+
+- [ ] Information classification scheme is applied to all AI data
+- [ ] Access control mechanisms are implemented for AI models and data
+- [ ] Cryptographic controls protect sensitive AI data
+- [ ] Change management processes govern AI system changes
+- [ ] Logging and monitoring capture AI system activities
+- [ ] Secure development practices are followed for AI models
+- [ ] Security testing validates AI system security
+- [ ] Incident management processes handle AI security incidents
+- [ ] Supplier management controls third-party AI components
+- [ ] Communication security protects AI APIs and interfaces
+- [ ] Backup and recovery procedures protect AI systems
+- [ ] Policies map directly to ISO 27001 control requirements
+- [ ] Regular assessments ensure ongoing compliance
+
+## Conclusion
+
+ISO 27001 provides a comprehensive framework for securing AI systems and their underlying infrastructure. By leveraging AgentIQ's Policy Engine, organizations can systematically implement these controls and demonstrate compliance with international information security standards.
+
+For additional guidance, refer to other compliance resources:
+
+<CardGroup cols={3}>
+  <Card title="GDPR Compliance" icon="shield-halved" href="/policy-engine/compliance/gdpr">
+    Data protection regulations
+  </Card>
+  <Card title="EU AI Act" icon="robot" href="/policy-engine/compliance/eu_ai_act">
+    AI specific regulations
+  </Card>
+  <Card title="Compliance Overview" icon="clipboard-check" href="/policy-engine/compliance/overview">
+    General compliance approach
+  </Card>
+</CardGroup>

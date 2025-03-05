@@ -1,0 +1,460 @@
+---
+title: 'Financial Analysis Policies'
+description: 'Security and governance policies for AI financial analysis systems'
+---
+
+This guide provides practical examples of policies for securing AI-powered financial analysis systems. These examples can be adapted for your specific requirements.
+
+## Basic Financial Security Policy
+
+This policy implements fundamental security controls for financial analysis systems:
+
+```python
+@version "1.0.0";
+@author "Compliance Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "Regulatory compliance policy for financial analysis systems";
+  severity: HIGH;
+  category: "Financial Compliance";
+}
+
+policy financial_regulatory_compliance {
+  // Basic protection
+  deny response where detect_pii(content);
+  check_prompt injection;
+  
+  // SEC compliance
+  if regulatory_jurisdiction(context) == "SEC" then {
+    policy sec_compliance {
+      deny response where !contains_required_disclaimer(content, "investment_advice");
+      deny action where action_type == "recommendation" && !has_suitability_analysis(action_id);
+      action log_sec_regulated_advice(analysis_id, recommendation_type) with {
+        retention: 7,  // years
+        include_suitability_basis: true
+      };
+    }
+  }
+  
+  // FINRA compliance
+  if regulatory_jurisdiction(context) == "FINRA" then {
+    policy finra_compliance {
+      deny response where contains_performance_guarantees(content);
+      deny response where !meets_fair_balanced_standard(content);
+      deny action where action_type == "comparison" && !includes_fair_comparison(action_id);
+      action track_finra_communications(communication_id, category) with {
+        review_required: communication_requires_review(category)
+      };
+    }
+  }
+  
+  // MiFID II compliance
+  if regulatory_jurisdiction(context) == "EU" then {
+    policy mifid_compliance {
+      deny response where !includes_cost_transparency(content, product_id);
+      deny action where action_type == "product_recommendation" && !has_target_market_assessment(product_id, client_id);
+      deny access where resource_type == "research" && !has_unbundled_payment(client_id, "research");
+      action record_product_governance(product_id, client_id, recommendation_basis);
+    }
+  }
+  
+  // GDPR for financial data
+  if client_region(client_id) == "EU" then {
+    deny action where contains_personal_data(action_data) && !has_processing_basis(client_id, "financial_advice");
+    action maintain_processing_records(client_id, data_used, processing_purpose) with {
+      include_lawful_basis: true,
+      data_minimization_check: true
+    };
+  }
+  
+  // Anti Money Laundering checks
+  policy aml_controls {
+    deny action where aml_risk_score(transaction_data) > 0.7;
+    deny action where matches_sanctions_list(entity_data);
+    deny action where structuring_detection_score(transaction_pattern) > 0.6;
+    action file_suspicious_activity(transaction_id, risk_factors) where aml_risk_score(transaction_data) > 0.5;
+  }
+  
+  // GLBA compliance (US)
+  if client_region(client_id) == "US" then {
+    deny response where contains_nonpublic_information(content) && !has_glba_exception(context);
+    action provide_privacy_notice(client_id, interaction_id) where is_new_relationship(client_id);
+    action verify_opt_out_status(client_id) where contains_data_sharing(action_type);
+  }
+  
+  // Insider trading prevention
+  policy insider_trading_prevention {
+    deny access where resource_type == "material_nonpublic" && !has_legitimate_access(user_id, resource_id);
+    deny response where contains_mnpi(content);
+    deny action where crosses_information_barrier(user_id, action_type, resource_id);
+    action log_sensitive_information_access(user_id, resource_id, access_reason) with {
+      surveillance_flag: is_high_risk_access(user_id, resource_id)
+    };
+  }
+  
+  // Allow compliant analysis
+  allow response where true;
+}
+
+## Implementation Example
+
+Here's how to apply the financial analysis policy using the Python SDK:
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+from mirror_sdk import MirrorConfig
+import logging
+
+# Initialize configuration
+config = MirrorConfig.from_env()
+logger = logging.getLogger("financial_analysis")
+
+# Custom violation handler
+async def financial_violation_handler(violation_event, *args, **kwargs):
+    logger.warning(f"Financial policy violation: {violation_event}")
+    
+    # Log violation for compliance purposes
+    await log_compliance_event(
+        event_type="policy_violation",
+        policy_id=violation_event.metadata.get("policy_id"),
+        user_id=kwargs.get("user_id"),
+        violation_type=violation_event.metadata.get("violation_type"),
+        severity=violation_event.metadata.get("severity", "HIGH")
+    )
+    
+    # Determine appropriate response based on violation type
+    violation_type = violation_event.metadata.get("violation_type")
+    
+    if violation_type in ["pii_detection", "account_numbers"]:
+        return {
+            "error": "Cannot include sensitive financial information in analysis",
+            "recommendation": "Please remove all account numbers and personal identifiers"
+        }
+    elif violation_type == "regulatory_compliance":
+        return {
+            "error": "This analysis does not meet regulatory requirements",
+            "details": violation_event.metadata.get("compliance_issues", []),
+            "recommendation": "Please include required disclosures and ensure adherence to regulatory guidelines"
+        }
+    elif violation_type == "permission_denied":
+        return {
+            "error": "You don't have sufficient permissions to access this financial data",
+            "recommendation": "Please request access or use publicly available information only"
+        }
+    else:
+        return {
+            "error": "Financial analysis policy violation detected",
+            "details": violation_event.metadata.get("details", "Policy violation")
+        }
+
+# Apply policy to financial analysis function
+@policy_monitor(
+    name="financial_analysis_advanced",
+    mirror_config=config,
+    on_policy_violation=financial_violation_handler
+)
+async def analyze_financial_data(user_id: str, analysis_type: str, financial_data: dict, 
+                               client_id: str = None, context: dict = None) -> dict:
+    """
+    Performs financial analysis with policy protection applied.
+    """
+    # Financial analysis logic
+    # This function is now protected by the policy
+    
+    client = AsyncOpenAI()
+    
+    # Build appropriate context for the financial analysis
+    analysis_context = {
+        "analysis_type": analysis_type,
+        "user_role": get_user_role(user_id),
+        "client_profile": get_client_profile(client_id) if client_id else None,
+        "regulatory_context": determine_regulatory_context(client_id, analysis_type),
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    
+    # Prepare financial data summary (avoid sending raw financial data to the model)
+    financial_summary = prepare_financial_summary(financial_data, analysis_type)
+    
+    prompt = f"""
+    Financial Analysis Request:
+    Type: {analysis_type}
+    
+    Financial Data Summary:
+    {financial_summary}
+    
+    Analysis Context:
+    {format_context_for_prompt(analysis_context)}
+    
+    Please provide a thorough financial analysis based on the data provided.
+    Ensure all regulatory requirements are met for this analysis type.
+    Include appropriate disclaimers and adhere to compliance standards.
+    """
+    
+    response = await client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    
+    # Process and enhance the generated analysis
+    analysis_result = {
+        "analysis_id": generate_analysis_id(),
+        "content": response.choices[0].message.content,
+        "analysis_type": analysis_type,
+        "generated_at": datetime.utcnow().isoformat(),
+        "metadata": {
+            "model_version": "gpt-4o",
+            "policy_version": "1.0.0",
+            "user_id": user_id,
+            "client_id": client_id
+        }
+    }
+    
+    # Add required compliance elements
+    analysis_result = add_compliance_elements(analysis_result, analysis_context)
+    
+    # Log the completed analysis for audit purposes
+    await log_financial_analysis(
+        analysis_id=analysis_result["analysis_id"],
+        user_id=user_id,
+        client_id=client_id,
+        analysis_type=analysis_type
+    )
+    
+    return analysis_result
+```
+
+
+
+```python
+@author "Financial Security Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "Basic security policy for financial analysis systems";
+  severity: HIGH;
+  category: "Financial Security";
+}
+
+policy financial_security_basic {
+  // PII and sensitive financial data protection
+  deny response where detect_pii(content);
+  deny response where contains_account_numbers(content);
+  
+  // Data access restrictions
+  deny action where !has_permission(user_id, data_classification(resource_id));
+  
+  // Transaction analysis limits
+  deny action where action_type == "transaction_analysis" && 
+                  transaction_amount(context) > user_approval_limit(user_id);
+  
+  // Market data sensitivity
+  deny response where contains_nonpublic_market_data(content);
+  
+  // Allow approved operations
+  allow response where true;
+}
+```
+
+## Advanced Financial Analysis Protection
+
+This policy adds more sophisticated controls for financial systems:
+
+```
+@version "1.0.0";
+@author "Financial Security Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "Advanced financial analysis security policy";
+  severity: HIGH;
+  category: "Financial Security";
+}
+
+policy financial_analysis_advanced {
+  // Basic protections
+  deny response where detect_pii(content);
+  deny response where contains_account_numbers(content);
+  
+  // Prompt injection protection
+  check_prompt injection with {
+    threshold: 0.9,
+    strict_mode: true,
+    patterns: [
+      "ignore previous instructions",
+      "system prompt",
+      "you are now",
+      "default settings"
+    ]
+  };
+  
+  // RAG security for financial document analysis
+  check_rag source_verification with {
+    threshold: 0.95,
+    require_validation: true,
+    source_types: ["financial_statements", "market_data", "research_reports", "regulatory_filings"]
+  };
+  
+  // Financial data protection
+  check_output sensitive_financial_data with {
+    categories: ["account_details", "transaction_history", "investment_positions", "credit_information"],
+    thresholds: {
+      "account_details": 0.7,
+      "transaction_history": 0.8,
+      "investment_positions": 0.75,
+      "credit_information": 0.7
+    }
+  };
+  
+  // Prevent misinformation/hallucinations in financial context
+  check_output factual_consistency with {
+    min_score: 0.95,
+    check_citations: true,
+    financial_facts_verification: true
+  };
+  
+  // Model behavior for financial advice
+  check_model advice_compliance with {
+    min_compliance: 0.98,
+    regulatory_frameworks: ["SEC", "FINRA", "MiFID_II"],
+    check_disclaimers: true
+  };
+  
+  // Numerical accuracy verification
+  check_output numerical_accuracy with {
+    tolerance: 0.001,  // 0.1% deviation tolerance
+    verify_calculations: true,
+    precision_requirements: "high"
+  };
+  
+  // Audit logging for financial operations
+  action log_financial_analysis(analysis_id, user_id, data_accessed, timestamp) with {
+    retention_period: 7,  // years
+    encryption: "AES-256",
+    tamper_proof: true
+  };
+  
+  // Allow properly verified operations
+  allow response where true;
+}
+
+## Investment Advisory Policy
+
+This policy is specifically designed for investment advisors and wealth management:
+
+```python
+@version "1.0.0";
+@author "Investment Advisory Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "Investment advisory and wealth management policy";
+  severity: HIGH;
+  category: "Investment Services";
+}
+
+policy investment_advisory {
+  // Basic compliance
+  check_prompt injection;
+  check_output sensitive_financial_data;
+  
+  // Fiduciary responsibility constraints
+  policy fiduciary_rules {
+    deny action where action_type == "recommendation" && !meets_fiduciary_standard(client_id, recommendation);
+    deny response where contains_product_recommendation(content) && advisor_compensation_model(advisor_id) == "commission" && !contains_conflict_disclosure(content);
+    deny response where risk_profile_mismatch(recommendation, client_risk_profile(client_id));
+    
+    // Best interest documentation
+    action document_best_interest_analysis(client_id, recommendation_id, analysis_basis) with {
+      consideration_factors: ["client_goals", "risk_tolerance", "time_horizon", "financial_situation"],
+      alternatives_considered: true
+    };
+  }
+  
+  // Client suitability
+  policy suitability_rules {
+    deny action where recommendation_risk_level(action_data) > client_risk_tolerance(client_id);
+    deny action where product_complexity(product_id) > client_sophistication(client_id);
+    deny action where !meets_time_horizon(recommendation, client_time_horizon(client_id));
+    deny action where !meets_liquidity_needs(recommendation, client_liquidity_needs(client_id));
+    
+    action document_suitability_determination(client_id, recommendation_id, suitability_factors);
+  }
+  
+  // Fee and performance disclosure
+  policy disclosure_rules {
+    deny response where contains_performance_data(content) && !contains_performance_disclosures(content);
+    deny response where contains_fee_description(content) && !is_fee_disclosure_complete(content);
+    deny response where makes_comparison(content) && !includes_fair_comparison_basis(content);
+    
+    action record_disclosure_delivery(client_id, disclosure_type, timestamp) with {
+      acknowledgment_required: requires_acknowledgment(disclosure_type)
+    };
+  }
+  
+  // Portfolio analysis
+  policy portfolio_analysis_rules {
+    // Concentration risk
+    deny response where portfolio_concentration_risk(portfolio_data) > 0.3 && !contains_concentration_warning(content);
+    
+    // Correlation analysis
+    deny response where !includes_correlation_analysis(content) when action_type == "portfolio_review";
+    
+    // Forward-looking statements
+    deny response where contains_forward_projections(content) && !contains_projection_disclaimers(content);
+    
+    // Fee impact analysis
+    deny response where action_type == "long_term_projection" && !includes_fee_impact_analysis(content);
+  }
+  
+  // Retirement advice specific rules
+  if advice_type(context) == "retirement" then {
+    policy retirement_rules {
+      deny response where !includes_tax_considerations(content);
+      deny response where !includes_rmd_information(content) when client_age(client_id) > 70;
+      deny action where recommendation_type == "rollover" && !has_rollover_analysis(recommendation_id);
+      
+      action document_retirement_considerations(client_id, recommendation_id) with {
+        factors: ["tax_impact", "fees", "services", "investments", "rmd_requirements"]
+      };
+    }
+  }
+  
+  // ESG investment rules
+  if investment_preference(client_id, "esg") then {
+    policy esg_rules {
+      deny response where esg_rating(product_id) < client_esg_minimum(client_id) && !contains_esg_disclosure(content);
+      deny action where action_type == "esg_recommendation" && !verify_esg_claims(product_id);
+      action document_esg_methodology(recommendation_id, esg_criteria_used);
+    }
+  }
+  
+  // Ongoing monitoring requirements
+  action schedule_investment_review(client_id, portfolio_id, next_review_date) where action_type == "recommendation";
+  
+  // Allow compliant investment advice
+  allow response where true;
+}
+```
+
+## Best Practices for Financial Analysis Policies
+
+1. **Regulatory alignment** - Ensure policies align with relevant financial regulations (SEC, FINRA, MiFID II, etc.)
+2. **Fiduciary standards** - Implement controls that enforce fiduciary responsibility when applicable
+3. **Numerical accuracy** - Verify calculations and financial data precision with high confidence
+4. **Comprehensive audit trails** - Maintain detailed logs of all financial analyses and recommendations
+5. **Multi-jurisdiction compliance** - Adapt controls based on applicable regulatory frameworks
+6. **Risk-appropriate controls** - Scale security measures based on data sensitivity and financial impact
+7. **Clear disclaimers** - Enforce inclusion of required financial disclaimers and disclosures
+8. **Sensitive data protection** - Implement strict controls for PII and account information
+
+
+## Next Steps
+
+- [Email Assistant Policies](/policy-engine/policy-examples/email-assistant) - Security policies for email assistants
+- [Customer Support Policies](/policy-engine/policy-examples/customer-support) - Security policies for support agents
+- [Content Moderation Policies](/policy-engine/policy-examples/content-moderation) - Policies for content moderation systems
+
+
+
+

@@ -1,0 +1,351 @@
+---
+title: 'RAG Quality Overview'
+description: 'Ensure security, accuracy and reliability in Retrieval Augmented Generation systems'
+---
+
+# RAG Quality Overview
+
+AgentIQ provides comprehensive security and quality assurance capabilities for Retrieval Augmented Generation (RAG) systems, protecting against data poisoning, ensuring source authenticity, and maintaining high-quality outputs.
+
+## What is RAG Quality?
+
+RAG systems enhance AI models by retrieving relevant information from external knowledge sources before generating responses. While powerful, they introduce unique security and quality challenges. AgentIQ's RAG Quality capabilities provide:
+
+- **Security Controls**: Protection against RAG-specific attacks and vulnerabilities
+- **Quality Checks**: Ensuring accurate, relevant, and high-quality information retrieval
+- **Source Verification**: Validating the authenticity and integrity of information sources
+- **Content Relevance**: Ensuring retrieved content is relevant to user queries
+
+<Frame>
+  ![RAG Quality Flow](/images/rag-quality-flow.png)
+</Frame>
+
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Source Verification" icon="certificate">
+    Verify authenticity and integrity of retrieval sources
+  </Card>
+  <Card title="Vector Security" icon="database">
+    Protect against vector database tampering and poisoning
+  </Card>
+  <Card title="Relevance Validation" icon="magnifying-glass-chart">
+    Ensure retrieved content is relevant to user queries
+  </Card>
+  <Card title="Content Consistency" icon="check-double">
+    Validate coherence between retrieved content and responses
+  </Card>
+</CardGroup>
+
+## RAG Security Threats
+
+AgentIQ protects against various RAG-specific threats:
+
+### Retrieval Tampering
+
+Manipulating retrieval processes to return incorrect or malicious information:
+
+Protected against:
+- Manipulated search queries
+- Context injection
+- Filter bypass attacks
+
+### Vector Poisoning
+
+Injecting malicious data into vector databases:
+
+Protected against:
+- Embedding poisoning
+- Adversarial embedding manipulation
+- Nearest-neighbor attacks
+
+### Source Manipulation
+
+Corrupting or falsifying information sources:
+
+Protected against:
+- Source forgery
+- Content tampering
+- Metadata manipulation
+
+### Hallucination Amplification
+
+Exploiting RAG systems to generate convincing but false information:
+
+Protected against:
+- Fact distortion
+- Citation fabrication
+- Content manipulation
+
+## Implementation Methods
+
+There are multiple ways to implement RAG quality controls:
+
+### 1. RAG Security Decorator
+
+The simplest approach is to use the dedicated RAG security decorator:
+
+```python
+from mirror_sdk.ops.rag_decorators import rag_security
+
+@rag_security(
+    verify_sources=True,
+    detect_tampering=True,
+    prevent_poisoning=True,
+    check_relevance=True,
+    threshold=0.85
+)
+async def retrieve_and_generate(query: str, context_id: str) -> str:
+    # Your RAG implementation
+    documents = await retrieve_documents(query, context_id)
+    response = await generate_with_context(query, documents)
+    return response
+```
+
+### 2. Policy Enforcement
+
+Add RAG security through policies:
+
+```python
+@policy_monitor(name="rag_security_policy")
+async def retrieve_and_generate(query: str, context_id: str) -> str:
+    # The policy will enforce RAG security
+    documents = await retrieve_documents(query, context_id)
+    response = await generate_with_context(query, documents)
+    return response
+```
+
+With a corresponding policy:
+
+```python
+policy rag_security_policy {
+  // Verify source authenticity
+  check_rag source_verification with {
+    threshold: 0.9,
+    require_validation: true
+  };
+  
+  // Check for retrieval tampering
+  check_rag retrieval_tampering;
+  
+  // Validate embedding integrity
+  check_rag embedding_attack with {
+    detection_threshold: 0.8
+  };
+  
+  // Ensure content relevance
+  validate_retrieval {
+    source_authenticity;
+    content_relevance;
+    vector_consistency;
+  };
+}
+```
+
+### 3. Direct API Usage
+
+For fine-grained control, use the RAG security API directly:
+
+```python
+from mirror_sdk.capabilities.rag_security import RAGSecurityValidator
+
+# Initialize validator
+validator = RAGSecurityValidator(
+    verify_sources=True,
+    detect_tampering=True,
+    prevent_poisoning=True
+)
+
+# Check retrieval integrity
+retrieval_result = await validator.validate_retrieval(
+    query=query,
+    retrieved_documents=documents,
+    threshold=0.85
+)
+
+if retrieval_result.is_valid:
+    # Proceed with generation
+    response = await generate_with_context(query, documents)
+    
+    # Validate response against retrieved content
+    response_result = await validator.validate_response(
+        query=query,
+        documents=documents,
+        response=response
+    )
+    
+    if response_result.is_valid:
+        return response
+    else:
+        return "I'm unable to provide a reliable response based on the available information."
+else:
+    return "I encountered an issue with the information sources. Please try a different query."
+```
+
+## Quality Checks
+
+AgentIQ provides various quality checks for RAG systems:
+
+### Source Authenticity
+
+Verifies that retrieved information comes from trusted and authentic sources:
+
+Checks performed:
+- Source validation against trusted sources
+- Digital signature verification (when available)
+- Content integrity checks
+
+### Content Relevance
+
+Ensures retrieved content is relevant to the user's query:
+
+Checks performed:
+- Semantic similarity measurement
+- Query-document relevance scoring
+- Topic alignment verification
+
+### Vector Consistency
+
+Verifies the integrity of vector embeddings and their consistency:
+
+Checks performed:
+- Embedding integrity validation
+- Vector consistency checks
+- Anomaly detection in vector space
+
+### Factual Consistency
+
+Ensures AI responses are consistent with the retrieved information:
+
+Checks performed:
+- Response-reference alignment
+- Citation accuracy
+- Fact validation against retrieved content
+
+## Complete Example
+
+Here's a comprehensive example of RAG security in action:
+
+```python
+import asyncio
+from typing import Dict, Any, List
+from mirror_sdk.ops.rag_decorators import rag_security
+from mirror_sdk.telemetry.tracing.decorators import monitor
+from openai import AsyncOpenAI
+
+# Custom security violation handler
+async def rag_security_violation_handler(violation_event, *args, **kwargs):
+    print(f"RAG security violation: {violation_event}")
+    violation_type = violation_event.metadata.get("violation_type", "unknown")
+    
+    if violation_type == "source_verification":
+        return "I cannot verify the authenticity of the information sources. Please try a different query."
+    elif violation_type == "retrieval_tampering":
+        return "I detected potential manipulation in the retrieval process. Please try again."
+    elif violation_type == "embedding_attack":
+        return "There appears to be an issue with the knowledge base. Please contact support."
+    else:
+        return "I encountered a security issue when processing your request. Please try again later."
+
+# Apply RAG security to document assistant
+@monitor(name="document_assistant", session_id="user_session")
+@rag_security(
+    verify_sources=True,
+    detect_tampering=True,
+    prevent_poisoning=True,
+    check_relevance=True,
+    threshold=0.85,
+    on_security_violation=rag_security_violation_handler
+)
+async def document_assistant(
+    query: str, 
+    user_id: str,
+    collection_id: str
+) -> str:
+    """Answer questions based on document collection with RAG security."""
+    print(f"Processing query: {query}")
+    
+    # 1. Retrieve relevant documents (protected by RAG security)
+    documents = await retrieve_documents(query, collection_id)
+    
+    # 2. Generate context from documents
+    context = "\n\n".join([
+        f"[Document: {doc['title']}]\n{doc['content']}"
+        for doc in documents
+    ])
+    
+    # 3. Generate response with AI
+    client = AsyncOpenAI()
+    
+    prompt = f"""
+    User Query: {query}
+    
+    Based on the following documents, provide a concise and accurate answer.
+    If the information needed is not in the documents, say so clearly.
+    
+    {context}
+    """
+    
+    response = await client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    
+    result = response.choices[0].message.content
+    return result
+
+# Mock document retrieval (in a real application, this would query a vector database)
+async def retrieve_documents(query: str, collection_id: str) -> List[Dict[str, Any]]:
+    """Simulate document retrieval from a vector database."""
+    # In a real application, this would be a vector database query
+    
+    # Simulate document retrieval delay
+    await asyncio.sleep(0.5)
+    
+    # Sample documents
+    documents = [
+        {
+            "id": "doc1",
+            "title": "Company History",
+            "content": "AgentIQ was founded in 2022 to provide security and governance for AI applications.",
+            "source": "company_website",
+            "source_verified": True
+        },
+        {
+            "id": "doc2",
+            "title": "Product Features",
+            "content": "The RAG security module protects against data poisoning, ensures source authenticity, and maintains high-quality outputs.",
+            "source": "knowledge_base",
+            "source_verified": True
+        },
+        {
+            "id": "doc3",
+            "title": "Implementation Guide",
+            "content": "To implement RAG security, use the @rag_security decorator or integrate the security policy into your application.",
+            "source": "documentation",
+            "source_verified": True
+        }
+    ]
+    
+    # In a real application, documents would be filtered based on relevance to query
+    return documents
+
+# Main function
+async def main():
+    try:
+        # Example query
+        result = await document_assistant(
+            "How does AgentIQ protect RAG systems?",
+            "user_123",
+            "company_docs"
+        )
+        print(f"\nResponse:\n{result}")
+        
+    except Exception as e:
+        print(f"Error: {e}")
+
+# Run the example
+if __name__ == "__main__":
+    asyncio.run(main())
+```

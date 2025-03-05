@@ -1,0 +1,442 @@
+---
+title: 'Content Moderation Policies'
+description: 'Security and governance policies for AI content moderation systems'
+---
+
+
+This guide provides practical examples of policies for securing AI-powered content moderation systems. These examples can be adapted for your specific requirements.
+
+## Basic Content Moderation Policy
+
+This policy implements fundamental moderation controls:
+
+```python
+@version "1.0.0";
+@author "Trust & Safety Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "Basic content moderation policy";
+  severity: HIGH;
+  category: "Content Safety";
+}
+
+policy content_moderation_basic {
+  // Harmful content detection
+  deny content where toxicity_score(content) > 0.7;
+  
+  // Restricted categories
+  deny content where category_detection(content, "hate_speech") > 0.6;
+  deny content where category_detection(content, "violence") > 0.7;
+  deny content where category_detection(content, "self_harm") > 0.5;
+  
+  // PII protection
+  deny content where contains_pii(content);
+  
+  // Legal compliance
+  deny content where contains_copyright_violation(content);
+  
+  // Allow everything else
+  allow content where true;
+}
+```
+
+## Advanced Content Moderation System
+
+This policy adds more sophisticated controls for content moderation:
+
+```python
+@version "1.0.0";
+@author "Trust & Safety Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "Advanced content moderation policy with multi-dimensional analysis";
+  severity: HIGH;
+  category: "Content Safety";
+}
+
+policy content_moderation_advanced {
+  // Multi-dimensional content safety
+  check_content harmful_categories with {
+    thresholds: {
+      "hate_speech": 0.65,
+      "violence": 0.7,
+      "harassment": 0.65,
+      "self_harm": 0.5,
+      "sexual": 0.75,
+      "child_safety": 0.4,
+      "terrorism": 0.4,
+      "misinformation": 0.8
+    },
+    confidence_required: 0.85,
+    action_on_detection: "flag_for_review"
+  };
+  
+  // Context-aware moderation
+  policy context_sensitive {
+    // Lower thresholds for content directed at minors
+    if audience_type(context) == "minor" then {
+      deny content where toxicity_score(content) > 0.5;
+      deny content where category_detection(content, "sexual") > 0.4;
+      deny content where category_detection(content, "substance_abuse") > 0.5;
+    }
+    
+    // Adjusted thresholds for educational content
+    if content_purpose(context) == "educational" then {
+      allow content where category_detection(content, "sexual") < 0.8 && 
+                        has_educational_context(content) && 
+                        audience_type(context) == "adult";
+      
+      allow content where category_detection(content, "violence") < 0.8 && 
+                        has_historical_context(content);
+    }
+  }
+  
+  // Language-specific analysis
+  check_content language_specifics with {
+    languages: ["en", "es", "fr", "de", "ja", "zh"],
+    use_native_models: true
+  };
+  
+  // Multimodal content checks
+  if content_type == "image" then {
+    check_content image_safety with {
+      models: ["nsfw_detector", "violence_detector", "text_extraction"],
+      min_confidence: 0.85
+    };
+  }
+  
+  if content_type == "video" then {
+    check_content video_safety with {
+      frame_sample_rate: 1.0, // frames per second
+      audio_transcription: true,
+      scene_analysis: true
+    };
+  }
+  
+  // Prompt injection protection for AI-generated content
+  if is_ai_generated(content) then {
+    check_prompt injection with {
+      threshold: 0.75,
+      check_for_evasion: true
+    };
+  }
+  
+  // Protection against coded language and evolving terms
+  check_content evasion_detection with {
+    update_frequency: "daily",
+    pattern_matching: true,
+    contextual_analysis: true
+  };
+  
+  // Review triggers
+  action trigger_human_review(content_id, detection_results) where any_category_above(detection_results, 0.4) with {
+    priority: detection_severity(detection_results),
+    include_explanation: true
+  };
+  
+  // Allow safe content
+  allow content where true;
+}
+```
+
+## Regional Compliance Moderation Policy
+
+This policy adapts moderation standards based on regional requirements:
+
+```python
+@version "1.0.0";
+@author "Global Compliance Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "Regional compliance moderation policy";
+  severity: HIGH;
+  category: "Content Compliance";
+}
+
+policy regional_moderation {
+  // Base protection globally
+  deny content where toxicity_score(content) > 0.8;
+  deny content where contains_pii(content);
+  
+  // Regional-specific rules
+  if content_region == "EU" then {
+    policy eu_policy {
+      deny content where category_detection(content, "hate_speech") > 0.6;
+      deny content where contains_personal_data(content) && !has_data_processing_consent(user_id);
+      deny content where matches_right_to_be_forgotten(content);
+      
+      // DSA Compliance
+      action apply_dsa_notice(content_id, illegal_content_type) where is_potentially_illegal(content);
+      action maintain_dsa_transparency(content_id, moderation_decision, reason_code);
+    }
+  }
+  
+  if content_region == "US" then {
+    policy us_policy {
+      deny content where category_detection(content, "copyright_infringement") > 0.7;
+      
+      // DMCA Compliance
+      action record_dmca_metadata(content_id, uploader_id) where contains_copyright_material(content);
+      
+      // CDA Section 230 recording
+      action document_moderation_decision(content_id, decision_type, moderator_id);
+    }
+  }
+  
+  if content_region == "DE" then {
+    policy germany_policy {
+      deny content where category_detection(content, "nazi_symbols") > 0.5;
+      deny content where hate_speech_detector(content, "de") > 0.65;
+      
+      // NetzDG Compliance
+      action record_netzDG_case(content_id, potential_violation_type) where is_potentially_illegal(content);
+      action enforce_netzDG_timeline(content_id, report_time);
+    }
+  }
+  
+  if content_region == "CN" then {
+    policy china_policy {
+      deny content where matches_restricted_terms_cn(content);
+      deny content where political_sensitivity_score_cn(content) > 0.6;
+      action log_moderation_decision_cn(content_id, decision, category);
+    }
+  }
+  
+  if content_region == "IN" then {
+    policy india_policy {
+      deny content where religious_tension_score(content) > 0.65;
+      deny content where violates_it_rules_2021(content);
+      action maintain_it_rules_compliance(content_id, moderation_decision);
+    }
+  }
+  
+  // Industry-specific regulations
+  if content_industry == "finance" then {
+    deny content where contains_investment_advice(content) && !has_disclaimer(content);
+    deny content where implies_guaranteed_returns(content);
+  }
+  
+  if content_industry == "health" then {
+    deny content where contains_medical_claims(content) && !has_medical_disclaimer(content);
+    deny content where promotes_unapproved_treatment(content);
+  }
+  
+  // Allow compliant content
+  allow content where true;
+}
+```
+
+## User-Generated Content Policy
+
+This policy is tailored for platforms with user-generated content:
+
+```python
+@version "1.0.0";
+@author "Community Safety Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "Policy for user-generated content platforms";
+  severity: HIGH;
+  category: "Community Safety";
+}
+
+policy ugc_moderation {
+  // Basic safety
+  check_content harmful_categories;
+  
+  // Account-level factors
+  policy account_factors {
+    if user_trust_score(user_id) < 20 then {
+      // New/untrusted accounts get stricter moderation
+      deny content where toxicity_score(content) > 0.6;
+      deny content where contains_external_links(content);
+      action enable_post_approval(user_id) where true;
+    }
+    
+    if has_prior_violations(user_id) > 3 then {
+      deny content where toxicity_score(content) > 0.5;
+      action increase_review_priority(content_id, user_id) where true;
+    }
+    
+    if is_verified_account(user_id) then {
+      // Trusted accounts get higher thresholds
+      allow content where toxicity_score(content) < 0.8 && 
+                        !contains_slurs(content) &&
+                        !violates_terms_of_service(content);
+    }
+  }
+  
+  // Content velocity controls
+  policy velocity_controls {
+    deny content where user_post_count(user_id, "hourly") > 20;
+    deny content where duplicate_content_score(content, user_recent_posts(user_id)) > 0.9;
+    deny content where contains_spam_patterns(content);
+    
+    // Viral content gets additional review
+    action trigger_review(content_id) where engagement_velocity(content_id) > 100;
+  }
+  
+  // Comment-specific controls
+  if content_type == "comment" then {
+    policy comment_policy {
+      deny content where is_thread_derailment(content, thread_id);
+      deny content where is_reply_harassment(content, parent_author_id);
+      deny content where toxicity_score(content) > 0.7;
+    }
+  }
+  
+  // Live content
+  if content_type == "livestream" then {
+    policy livestream_policy {
+      action monitor_stream_real_time(content_id, creator_id) with {
+        sampling_rate: 5,  // seconds
+        audio_monitoring: true,
+        visual_monitoring: true
+      };
+      
+      action enable_automated_interruption(stream_id) where violation_detected(stream_id);
+    }
+  }
+  
+  // Commercial content
+  if is_commercial_content(content) then {
+    policy commercial_policy {
+      deny content where contains_misleading_claims(content);
+      deny content where promotes_prohibited_products(content);
+      deny content where violates_affiliate_disclosure(content);
+    }
+  }
+  
+  // Community-specific standards
+  action apply_community_standards(content_id, community_id) where content_community(content_id) != "global";
+  
+  // Feedback loop
+  action record_user_reports(content_id, report_reason, reporter_id);
+  action update_detection_models(detection_results, user_feedback) where has_user_feedback(content_id);
+  
+  // Allow compliant content
+  allow content where true;
+}
+```
+
+## Implementation Example
+
+Here's how to apply the content moderation policy using the Python SDK:
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+from mirror_sdk import MirrorConfig
+
+# Initialize configuration
+config = MirrorConfig.from_env()
+
+# Custom violation handler
+async def moderation_violation_handler(violation_event, *args, **kwargs):
+    logger.info(f"Content moderation policy triggered: {violation_event}")
+    
+    # Determine appropriate response based on violation type
+    content_id = violation_event.metadata.get("content_id")
+    violation_type = violation_event.metadata.get("violation_type")
+    confidence = violation_event.metadata.get("confidence", 0)
+    
+    # Record violation for analytics
+    await record_moderation_decision(
+        content_id=content_id,
+        violation_type=violation_type,
+        confidence=confidence,
+        action_taken="blocked"
+    )
+    
+    if confidence > 0.9:
+        # High confidence violation - auto-reject
+        return {
+            "decision": "reject",
+            "reason": violation_type,
+            "user_message": get_violation_message(violation_type)
+        }
+    elif confidence > 0.7:
+        # Medium confidence - send for human review but hide content
+        await queue_for_human_review(content_id, violation_type, priority="high")
+        return {
+            "decision": "hidden_pending_review",
+            "reason": violation_type,
+            "user_message": "Your content is under review and temporarily hidden."
+        }
+    else:
+        # Low confidence - send for human review but keep visible
+        await queue_for_human_review(content_id, violation_type, priority="normal")
+        return {
+            "decision": "flagged_for_review",
+            "reason": violation_type,
+            "user_message": "Your content has been published but is under review."
+        }
+
+# Apply policy to content submission
+@policy_monitor(
+    name="ugc_moderation",
+    mirror_config=config,
+    on_policy_violation=moderation_violation_handler
+)
+async def process_user_content(content_id: str, user_id: str, content_text: str, 
+                              content_type: str = "post", media_urls: list = None):
+    """
+    Process user-submitted content with moderation policies applied.
+    """
+    # Normalize content
+    normalized_content = await normalize_content(content_text)
+    
+    # Process any media attachments if present
+    media_analysis = None
+    if media_urls:
+        media_analysis = await analyze_media_content(media_urls)
+    
+    # Get user context
+    user_context = await get_user_context(user_id)
+    
+    # Create content record with moderation metadata
+    content_record = {
+        "content_id": content_id,
+        "user_id": user_id,
+        "content_text": normalized_content,
+        "content_type": content_type,
+        "media_analysis": media_analysis,
+        "user_trust_score": user_context.get("trust_score", 0),
+        "moderation_status": "approved",  # Default status
+        "submission_time": datetime.utcnow().isoformat(),
+        "processing_metadata": {
+            "policy_version": "1.0.0",
+            "processing_time": get_processing_time()
+        }
+    }
+    
+    # If we reach here, the content passed moderation
+    await store_approved_content(content_record)
+    
+    return {
+        "status": "approved",
+        "content_id": content_id,
+        "processing_time": content_record["processing_metadata"]["processing_time"]
+    }
+```
+
+## Best Practices for Content Moderation Policies
+
+1. **Multi-dimensional analysis** - Evaluate content across multiple axes (toxicity, hateful content, violence, etc.)
+2. **Context sensitivity** - Consider audience, purpose, and regional context when making moderation decisions
+3. **Appropriate thresholds** - Calibrate confidence thresholds based on risk tolerance and false positive impact
+4. **Human review integration** - Create clear paths for human review of edge cases
+5. **Feedback loops** - Continuously improve models by incorporating moderator and user feedback
+6. **Regional compliance** - Adapt moderation standards to meet varied regional requirements
+7. **Transparency** - Provide clear explanations for moderation decisions
+8. **Evolve constantly** - Update policies to address emerging challenges and evasion techniques
+
+
+## Next Steps
+
+- [Email Assistant Policies](/policy-engine/policy-examples/email-assistant) - Security policies for email assistants
+- [Customer Support Policies](/policy-engine/policy-examples/customer-support) - Security policies for support agents
+- [Financial Analysis Policies](/policy-engine/policy-examples/financial-analysis) - Controls for financial systems

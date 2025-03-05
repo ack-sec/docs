@@ -1,0 +1,489 @@
+---
+title: 'EU AI Act Compliance'
+description: 'Comprehensive implementation guide for meeting EU AI Act requirements with AgentIQ'
+---
+
+The EU AI Act introduces a comprehensive regulatory framework for artificial intelligence systems based on risk categories. This guide details how to implement EU AI Act compliance using AgentIQ's Policy Engine.
+
+## EU AI Act Overview
+
+The EU AI Act categorizes AI systems into four risk levels:
+
+<CardGroup cols={2}>
+  <Card title="Unacceptable Risk" icon="ban" color="red">
+    AI systems that are prohibited due to unacceptable risks (e.g., social scoring, manipulation)
+  </Card>
+  <Card title="High Risk" icon="exclamation-triangle" color="orange">
+    AI systems with significant potential impact requiring strict regulatory controls
+  </Card>
+  <Card title="Limited Risk" icon="circle-exclamation" color="yellow">
+    AI systems with specific transparency requirements (e.g., chatbots, emotion recognition)
+  </Card>
+  <Card title="Minimal Risk" icon="circle-check" color="green">
+    AI systems with minimal regulation, representing most AI applications
+  </Card>
+</CardGroup>
+
+## Key Compliance Requirements
+
+For High-Risk AI systems, the EU AI Act imposes these key requirements:
+
+1. **Risk Management System**: Establish continuous risk assessment and mitigation
+2. **Data Governance**: Ensure appropriate data handling practices
+3. **Technical Documentation**: Maintain comprehensive documentation
+4. **Record-Keeping**: Implement automatic logging capabilities
+5. **Transparency**: Provide clear information to users
+6. **Human Oversight**: Enable human monitoring and intervention
+7. **Accuracy & Robustness**: Ensure system reliability and security
+8. **Conformity Assessment**: Conduct regular compliance evaluations
+
+## Implementation with AgentIQ
+
+### 1. Risk Classification and Management
+
+Implement automated risk classification for your AI applications:
+
+```python
+@version "1.0.0";
+@author "Compliance Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "EU AI Act risk management policy";
+  severity: HIGH;
+  category: "Compliance & Oversight";
+  compliance_mappings: {
+    "eu_ai_regulation": ["AI-Act-01", "AI-Act-02", "AI-Act-03"]
+  }
+}
+
+policy eu_ai_risk_management {
+  // Risk classification
+  action classify_ai_risk(model_parameters, use_case) with {
+    risk_categories: ["minimal", "limited", "high", "unacceptable"],
+    require_documentation: true,
+    update_registry: true
+  };
+  
+  // Risk assessment validation
+  deny deployment where risk_level(model_id) == "high" && !has_risk_assessment(model_id);
+  
+  // Unacceptable use prevention
+  deny deployment where risk_level(model_id) == "unacceptable";
+  
+  // Continuous monitoring
+  action monitor_risk_factors(model_id, context) with {
+    interval: "daily",
+    threshold_adjustments: true,
+    alert_channels: ["compliance_team", "model_owners"]
+  };
+}
+```
+
+#### Risk Management Integration
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+
+@policy_monitor(name="eu_ai_risk_management")
+async def deploy_model(model_id, model_parameters, use_case):
+    """
+    Deploys model with EU AI Act risk controls automatically applied.
+    """
+    # Risk classification happens automatically via the policy
+    deployment_result = await perform_deployment(model_id, model_parameters)
+    return deployment_result
+```
+
+### 2. Data Governance Implementation
+
+Implement data governance controls to ensure compliance with Article 10:
+
+```python
+policy eu_ai_data_governance {
+  // Data quality validation
+  deny training where !validate_data_quality(training_data, quality_metrics);
+  
+  // Data minimization
+  deny processing where excessive_data_collection(data_request);
+  
+  // Data annotation verification
+  action verify_annotations(dataset_id, annotation_metrics) with {
+    minimum_accuracy: 0.95,
+    require_review: true
+  };
+  
+  // Bias detection and mitigation
+  deny training where detect_dataset_bias(training_data, protected_attributes);
+  
+  // Data documentation requirements
+  action document_dataset(dataset_id, dataset_metadata) with {
+    documentation_types: ["source", "composition", "preprocessing"],
+    retention_period: 730 // days
+  };
+}
+```
+
+### 3. Transparency Requirements
+
+Implement transparency controls for AI interactions:
+
+```python
+policy eu_ai_transparency {
+  // Disclosure requirements
+  deny response where !includes_ai_disclosure(content);
+  
+  // Clear restrictions communication
+  deny response where !communicates_limitations(content);
+  
+  // Usage notifications
+  action notify_ai_interaction(user_id, interaction_type) with {
+    notification_methods: ["interface", "documentation"],
+    acknowledgement_required: interaction_type == "initial"
+  };
+  
+  // Verify understandable outputs
+  check_output understandability with {
+    min_score: 0.85,
+    target_audience: "general_public"
+  };
+}
+```
+
+### 4. Human Oversight Implementation
+
+Enable effective human oversight through policy controls:
+
+```python
+policy eu_ai_human_oversight {
+  // Human review requirements
+  deny high_impact_decision where !has_human_reviewer(decision_id);
+  
+  // Escalation mechanisms
+  action enable_escalation(decision_id, confidence_score) with {
+    escalation_threshold: 0.85,
+    reviewer_role: "domain_expert"
+  };
+  
+  // Override capabilities
+  action document_override(decision_id, original_decision, override_details) with {
+    require_justification: true,
+    update_training: true
+  };
+  
+  // Monitoring of automation bias
+  action monitor_reviewer_agreement(reviewer_id, decision_stats) with {
+    agreement_threshold: 0.7,
+    review_threshold: agreement_rate < 0.7
+  };
+}
+```
+
+### 5. Technical Documentation Generation
+
+Automate the maintenance of technical documentation:
+
+```python
+from mirror_sdk.compliance.documentation import DocumentationGenerator
+
+async def generate_eu_ai_act_documentation(model_id, version):
+    """
+    Generates comprehensive EU AI Act technical documentation.
+    """
+    doc_generator = DocumentationGenerator(
+        framework="EU_AI_ACT",
+        model_id=model_id,
+        version=version
+    )
+    
+    # Generate documentation sections required by EU AI Act
+    documentation = await doc_generator.generate_full_documentation(
+        sections=[
+            "system_description",
+            "risk_assessment",
+            "data_governance",
+            "technical_specifications",
+            "monitoring_systems",
+            "accuracy_metrics",
+            "human_oversight",
+            "compliance_evaluation"
+        ],
+        format="pdf"
+    )
+    
+    return documentation
+```
+
+### 6. Record-Keeping and Logging
+
+Implement comprehensive logging for EU AI Act compliance:
+
+```python
+policy eu_ai_logging {
+  // Automatic event logging
+  action log_system_event(event_type, context_data) with {
+    event_types: [
+      "decision", "user_interaction", "parameter_change",
+      "data_access", "model_update", "review_action"
+    ],
+    retention_period: 730,  // days
+    include_context: true
+  };
+  
+  // Decision traceability
+  action maintain_decision_record(decision_id, decision_data) with {
+    record_format: "tamper_evident",
+    include_factors: true,
+    include_alternatives: true
+  };
+  
+  // System performance logging
+  action log_performance_metrics(model_id, metrics_data) with {
+    interval: "hourly",
+    aggregate: "daily",
+    retention_period: 730  // days
+  };
+}
+```
+
+### 7. Accuracy and Robustness Validation
+
+Implement controls to ensure accuracy, robustness, and cybersecurity:
+
+```python
+policy eu_ai_accuracy_robustness {
+  // Accuracy validation
+  deny deployment where accuracy_score(model_id, test_dataset) < minimum_accuracy(use_case);
+  
+  // Robustness testing
+  action validate_robustness(model_id, test_scenarios) with {
+    test_types: ["adversarial", "edge_cases", "noise_tolerance"],
+    minimum_performance: 0.9,
+    require_improvement: true
+  };
+  
+  // Cybersecurity requirements
+  check_model security with {
+    vulnerability_scan: true,
+    protocol_validation: true,
+    encryption_verification: true
+  };
+  
+  // Ongoing monitoring
+  action monitor_performance_degradation(model_id, performance_metrics) with {
+    baseline_comparison: true,
+    alert_threshold: 0.05,  // 5% degradation
+    auto_remediation: performance_drop > 0.1
+  };
+}
+```
+
+### 8. Conformity Assessment
+
+Implement automated conformity assessment capabilities:
+
+```python
+from mirror_sdk.compliance.assessments import ConformityAssessment
+
+async def conduct_eu_ai_act_assessment(model_id, version):
+    """
+    Conducts an EU AI Act conformity assessment.
+    """
+    assessment = ConformityAssessment(
+        framework="EU_AI_ACT",
+        model_id=model_id,
+        version=version
+    )
+    
+    # Run assessment against all EU AI Act requirements
+    results = await assessment.evaluate(
+        requirements=[
+            "risk_management",
+            "data_governance",
+            "technical_documentation",
+            "record_keeping",
+            "transparency",
+            "human_oversight",
+            "accuracy_robustness",
+            "cybersecurity"
+        ]
+    )
+    
+    # Generate compliance report
+    report = await assessment.generate_report(
+        include_evidence=True,
+        include_remediation=True,
+        format="pdf"
+    )
+    
+    return results, report
+```
+
+## Complete Implementation Example
+
+Here's a comprehensive example of applying EU AI Act controls to a production system:
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+from mirror_sdk.compliance.documentation import DocumentationGenerator
+from mirror_sdk.compliance.assessments import ConformityAssessment
+from mirror_sdk import MirrorConfig, MirrorSDK
+
+# Configuration
+config = MirrorConfig.from_env()
+
+# Main application with EU AI Act compliance
+class EUAIActCompliantSystem:
+    def __init__(self, model_id, use_case):
+        self.model_id = model_id
+        self.use_case = use_case
+        self.sdk = MirrorSDK(config)
+        self.doc_generator = DocumentationGenerator(
+            framework="EU_AI_ACT",
+            model_id=model_id
+        )
+    
+    @policy_monitor(name="eu_ai_risk_management")
+    async def initialize_system(self):
+        """Initialize the AI system with risk assessment."""
+        # System initialization logic
+        system_params = await self.get_system_parameters()
+        # Risk classification happens via policy
+        return {"status": "initialized", "risk_level": system_params.get("risk_level")}
+    
+    @policy_monitor(name="eu_ai_data_governance")
+    async def prepare_training_data(self, dataset_id):
+        """Prepare training data with governance controls."""
+        # Data preparation with governance controls
+        return {"status": "data_prepared", "quality_metrics": {"completeness": 0.98}}
+    
+    @policy_monitor(name="eu_ai_accuracy_robustness")
+    async def train_model(self, training_parameters):
+        """Train model with accuracy and robustness validation."""
+        # Model training logic
+        return {"status": "trained", "accuracy": 0.94, "robustness_score": 0.91}
+    
+    @policy_monitor(name="eu_ai_transparency")
+    @policy_monitor(name="eu_ai_human_oversight")
+    async def generate_response(self, user_query, user_id):
+        """Generate responses with transparency and oversight controls."""
+        # Response generation with oversight triggers
+        response = await self.model_generate(user_query)
+        if self.requires_human_review(response):
+            response = await self.escalate_for_review(response, user_id)
+        return response
+    
+    @policy_monitor(name="eu_ai_logging")
+    async def log_system_activity(self, activity_type, activity_data):
+        """Log system activity for compliance records."""
+        # Logging with compliance controls
+        return {"status": "logged", "retention_period": 730}
+    
+    async def generate_compliance_documentation(self):
+        """Generate comprehensive EU AI Act documentation."""
+        documentation = await self.doc_generator.generate_full_documentation(
+            sections=[
+                "system_description",
+                "risk_assessment",
+                "data_governance",
+                "technical_specifications",
+                "monitoring_systems",
+                "accuracy_metrics",
+                "human_oversight",
+                "compliance_evaluation"
+            ],
+            format="pdf"
+        )
+        return documentation
+    
+    async def conduct_conformity_assessment(self):
+        """Conduct EU AI Act conformity assessment."""
+        assessment = ConformityAssessment(
+            framework="EU_AI_ACT",
+            model_id=self.model_id
+        )
+        
+        results = await assessment.evaluate(
+            requirements=[
+                "risk_management",
+                "data_governance",
+                "technical_documentation",
+                "record_keeping",
+                "transparency",
+                "human_oversight",
+                "accuracy_robustness",
+                "cybersecurity"
+            ]
+        )
+        
+        report = await assessment.generate_report(
+            include_evidence=True,
+            include_remediation=True,
+            format="pdf"
+        )
+        
+        return results, report
+    
+    # Helper methods
+    async def get_system_parameters(self):
+        # Implementation details
+        return {"risk_level": "high", "complexity": "moderate"}
+    
+    async def model_generate(self, query):
+        # Implementation details
+        return {"content": "Response with AI disclosure", "confidence": 0.92}
+    
+    def requires_human_review(self, response):
+        # Implementation details
+        return response["confidence"] < 0.9
+    
+    async def escalate_for_review(self, response, user_id):
+        # Implementation details
+        return {"content": "Human-reviewed response", "reviewer_id": "reviewer_123"}
+```
+
+## Policy Mappings to EU AI Act Articles
+
+AgentIQ's policy rules can be directly mapped to EU AI Act articles for traceability:
+
+| EU AI Act Article | Policy Rule | Implementation |
+|-------------------|-------------|----------------|
+| Article 9: Risk Management | `action classify_ai_risk()` | Risk classification and management |
+| Article 10: Data Governance | `deny training where !validate_data_quality()` | Data quality validation |
+| Article 11: Technical Documentation | `action document_dataset()` | Documentation generation |
+| Article 12: Record-Keeping | `action log_system_event()` | Comprehensive logging |
+| Article 13: Transparency | `deny response where !includes_ai_disclosure()` | Disclosure requirements |
+| Article 14: Human Oversight | `deny high_impact_decision where !has_human_reviewer()` | Review requirements |
+| Article 15: Accuracy & Robustness | `deny deployment where accuracy_score() < minimum_accuracy()` | Performance validation |
+| Article 16-17: Conformity | `conduct_eu_ai_act_assessment()` | Assessment process |
+
+## Compliance Verification Checklist
+
+Use this checklist to verify your EU AI Act compliance implementation:
+
+- [ ] Risk management system is documented and operational
+- [ ] Data governance practices follow requirements in Article 10
+- [ ] Technical documentation is complete and up-to-date
+- [ ] Record-keeping systems capture required information
+- [ ] Transparency measures are implemented in user interactions
+- [ ] Human oversight mechanisms are in place for high-risk systems
+- [ ] Accuracy and robustness metrics meet requirements
+- [ ] Conformity assessment has been conducted and documented
+- [ ] Policies map directly to EU AI Act requirements
+- [ ] Ongoing monitoring ensures continued compliance
+
+## Conclusion
+
+The EU AI Act establishes a comprehensive framework for ensuring AI systems are safe, transparent, and accountable. By leveraging AgentIQ's Policy Engine, organizations can implement the required controls systematically and demonstrate compliance effectively.
+
+For additional guidance, refer to other compliance resources:
+
+<CardGroup cols={3}>
+  <Card title="GDPR Compliance" icon="shield-halved" href="/policy-engine/compliance/gdpr">
+    Data protection regulations
+  </Card>
+
+  <Card title="ISO 27001" icon="certificate" href="/policy-engine/compliance/iso27001">
+    AI management systems
+  </Card>
+</CardGroup>

@@ -1,0 +1,444 @@
+---
+title: 'GDPR Compliance'
+description: 'Implementing GDPR requirements for AI applications using AgentIQ Policy Engine'
+---
+
+This guide provides comprehensive instructions for implementing GDPR (General Data Protection Regulation) compliance controls for AI applications using the AgentIQ Policy Engine.
+
+## GDPR Overview
+
+The GDPR establishes strict requirements for processing personal data of individuals in the European Union and European Economic Area. It's built around seven key principles:
+
+<CardGroup cols={2}>
+  <Card title="Lawfulness, Fairness, and Transparency" icon="scale-balanced">
+    Processing must be lawful, fair, and transparent to the data subject
+  </Card>
+  <Card title="Purpose Limitation" icon="bullseye">
+    Data must be collected for specified, explicit, and legitimate purposes
+  </Card>
+  <Card title="Data Minimization" icon="minimize">
+    Only process what's necessary for your specified purposes
+  </Card>
+  <Card title="Accuracy" icon="check-circle">
+    Personal data must be accurate and kept up to date
+  </Card>
+  <Card title="Storage Limitation" icon="clock">
+    Data must be kept in identifiable form only as long as necessary
+  </Card>
+  <Card title="Integrity and Confidentiality" icon="lock">
+    Ensure appropriate security, integrity, and confidentiality
+  </Card>
+  <Card title="Accountability" icon="clipboard-check">
+    The data controller is responsible for demonstrating compliance
+  </Card>
+</CardGroup>
+
+## Key GDPR Requirements for AI Systems
+
+AI systems process large amounts of data and make automated decisions, making several GDPR requirements particularly relevant:
+
+1. **Legal Basis for Processing**: Establish and document a valid legal basis
+2. **Data Subject Rights**: Implement mechanisms for rights fulfillment
+3. **Data Protection by Design**: Build privacy controls into AI systems
+4. **Data Minimization**: Limit data collection and processing
+5. **Automated Decision-Making**: Provide safeguards for automated decisions
+6. **Data Protection Impact Assessments**: Conduct DPIAs for high-risk processing
+7. **Records of Processing**: Maintain detailed documentation
+8. **International Data Transfers**: Implement safeguards for cross-border transfers
+
+## Implementation with AgentIQ
+
+### 1. Legal Basis and Consent Management
+
+Implement consent verification and legal basis validation:
+
+```python
+@version "1.0.0";
+@author "Privacy Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "GDPR legal basis validation policy";
+  severity: HIGH;
+  category: "Data Protection";
+  compliance_mappings: {
+    "gdpr_article": ["Article 6", "Article 7", "Article 13"]
+  }
+}
+
+policy gdpr_legal_basis {
+  // Verify valid legal basis exists
+  deny processing where !has_valid_legal_basis(user_id, processing_purpose);
+  
+  // Validate consent requirements
+  deny processing where legal_basis(user_id, processing_purpose) == "consent" && 
+                      !has_valid_consent(user_id, processing_purpose);
+  
+  // Consent withdrawal handling
+  deny processing where consent_withdrawn(user_id, processing_purpose);
+  
+  // Child consent verification
+  deny processing where is_child(user_id) && 
+                      !has_parental_consent(user_id, processing_purpose);
+  
+  // Purpose limitation enforcement
+  deny processing where processing_purpose != original_purpose(user_id, data_type) && 
+                      !compatible_purpose(processing_purpose, original_purpose(user_id, data_type));
+}
+```
+
+#### Python Implementation
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+
+@policy_monitor(name="gdpr_legal_basis")
+async def process_user_data(user_id, user_data, processing_purpose):
+    """
+    Process user data with GDPR legal basis verification.
+    Legal basis validation occurs automatically via the policy.
+    """
+    # Processing with verified legal basis
+    result = await perform_processing(user_data, processing_purpose)
+    return result
+```
+
+### 2. Data Subject Rights Implementation
+
+Implement controls for data subject rights fulfillment:
+
+```python
+policy gdpr_data_subject_rights {
+  // Right of access
+  action provide_data_access(user_id, request_details) with {
+    response_time_days: 30,
+    include_categories: [
+      "data_collected", "processing_purposes", "recipients", 
+      "retention_period", "rights_information", "source_information",
+      "safeguards_information", "automated_decision_information"
+    ],
+    format_options: ["electronic", "paper"],
+    verify_completeness: true
+  };
+  
+  // Right to rectification
+  action process_rectification(user_id, rectification_details) with {
+    response_time_days: 30,
+    verification_required: true,
+    propagate_changes: true,
+    notify_recipients: true
+  };
+  
+  // Right to erasure (right to be forgotten)
+  action process_erasure(user_id, erasure_details) with {
+    response_time_days: 30,
+    verification_required: true,
+    complete_removal: true,
+    include_backups: true,
+    notify_recipients: true,
+    document_exemptions: true
+  };
+  
+  // Right to restriction of processing
+  action restrict_processing(user_id, restriction_details) with {
+    response_time_days: 30,
+    verification_required: true,
+    restriction_methods: ["segregation", "blocking", "temporary_removal"],
+    notify_recipients: true
+  };
+  
+  // Right to data portability
+  action provide_data_portability(user_id, portability_details) with {
+    response_time_days: 30,
+    formats: ["json", "csv", "xml"],
+    structured_data: true,
+    direct_transfer_option: true
+  };
+  
+  // Right to object
+  action process_objection(user_id, objection_details) with {
+    response_time_days: 30,
+    verification_required: true,
+    cease_processing: objection_details.valid,
+    document_compelling_grounds: !objection_details.valid
+  };
+  
+  // Rights related to automated decision making
+  action process_automated_decision_rights(user_id, automation_details) with {
+    provide_explanation: true,
+    human_intervention_option: true,
+    allow_expression_of_view: true,
+    allow_decision_contest: true
+  };
+}
+```
+
+### 3. Data Protection by Design Implementation
+
+Implement privacy by design controls:
+
+```python
+policy gdpr_privacy_by_design {
+  // Data minimization
+  deny processing where !is_minimal_data_collection(data_fields, processing_purpose);
+  
+  // Default privacy settings
+  deny system_configuration where !privacy_by_default(configuration_settings);
+  
+  // PII detection and protection
+  check_output pii with {
+    action: "redact",
+    types: ["ALL"],
+    threshold: 0.8
+  };
+  
+  // Pseudonymization requirements
+  deny storage where contains_personal_data(data) && !is_pseudonymized(data);
+  
+  // Purpose specification
+  deny processing where !has_specified_purpose(processing_operation);
+  
+  // Access controls
+  deny access where !has_legitimate_need(user_id, data_category, purpose);
+  
+  // Retention limits
+  deny storage where storage_duration(data_category) > max_retention_period(data_category);
+}
+```
+
+### 4. Records of Processing Activities
+
+Implement documentation controls for processing records:
+
+```
+policy gdpr_processing_records {
+  // Maintain processing records
+  action document_processing_activity(activity_details) with {
+    required_fields: [
+      "controller_info", "purposes", "data_categories", 
+      "recipient_categories", "transfers", "retention_periods", 
+      "security_measures", "legal_basis"
+    ],
+    update_frequency: "as_needed",
+    verification_required: true
+  };
+  
+  // Documentation for new processing
+  deny new_processing where !has_processing_record(processing_id);
+  
+  // Processing record updates
+  action update_processing_record(record_id, update_details) with {
+    require_approval: true,
+    maintain_history: true,
+    notify_dpo: true
+  };
+  
+  // Processing inventory maintenance
+  action maintain_processing_inventory(inventory_details) with {
+    review_frequency: 180,  // days
+    completion_verification: true,
+    risk_based_prioritization: true
+  };
+}
+```
+
+### 5. Data Protection Impact Assessment
+
+Implement DPIA controls for high-risk processing:
+
+```python
+policy gdpr_dpia {
+  // DPIA requirement determination
+  action assess_dpia_requirement(processing_details) with {
+    high_risk_criteria: [
+      "systematic_profiling", "large_scale_special_categories", 
+      "public_area_monitoring", "innovative_technology",
+      "automated_decision_making", "denial_of_service_risk"
+    ],
+    documentation_required: true
+  };
+  
+  // DPIA process enforcement
+  deny high_risk_processing where !has_completed_dpia(processing_id);
+  
+  // DPIA documentation
+  action document_dpia(dpia_details) with {
+    required_sections: [
+      "processing_description", "necessity_assessment", 
+      "risk_assessment", "mitigation_measures",
+      "stakeholder_consultation", "dpo_advice"
+    ],
+    approval_required: true,
+    review_frequency: 365  // days
+  };
+  
+  // High risk mitigation
+  deny deployment where dpia_risk_level(processing_id) == "high" && 
+                     !has_approved_mitigation(processing_id);
+  
+  // Supervisory authority consultation
+  action manage_authority_consultation(consultation_details) with {
+    required_when: dpia_residual_risk(processing_id) == "high",
+    documentation_required: true,
+    response_tracking: true
+  };
+}
+```
+
+### 6. Data Breach Notification
+
+Implement data breach notification controls:
+
+```python
+policy gdpr_breach_notification {
+  // Breach detection
+  action detect_potential_breach(event_data) with {
+    detection_methods: ["anomaly_detection", "access_monitoring", "user_reports"],
+    immediate_assessment: true,
+    evidence_preservation: true
+  };
+  
+  // Breach risk assessment
+  action assess_breach_risk(breach_data) with {
+    risk_factors: [
+      "data_types", "breach_scope", "security_measures", 
+      "containment_status", "identification_likelihood"
+    ],
+    documentation_required: true
+  };
+  
+  // Authority notification
+  action notify_supervisory_authority(breach_details) with {
+    notification_deadline: 72,  // hours
+    required_info: [
+      "breach_nature", "affected_data_subjects", "affected_records", 
+      "contact_information", "consequences", "measures_taken", 
+      "measures_proposed"
+    ],
+    documentation_required: true,
+    exemption_justification: breach_details.risk == "low"
+  };
+  
+  // Data subject notification
+  action notify_data_subjects(breach_details) with {
+    notification_requirement: breach_details.risk == "high",
+    notification_deadline: 72,  // hours
+    communication_methods: ["email", "phone", "mail", "public_notice"],
+    required_content: [
+      "breach_description", "contact_information", 
+      "likely_consequences", "mitigation_measures"
+    ],
+    documentation_required: true
+  };
+  
+  // Breach documentation
+  action document_breach(breach_details) with {
+    documentation_elements: [
+      "facts", "effects", "remedial_action",
+      "notification_details", "decision_reasoning"
+    ],
+    retention_period: 730  // days
+  };
+}
+```
+
+### 7. International Data Transfers
+
+Implement controls for cross-border data transfers:
+
+```python
+policy gdpr_international_transfers {
+  // Adequacy decision verification
+  deny transfer where transfer_destination(destination) == "non-adequate" && 
+                   !has_appropriate_safeguards(transfer_id);
+  
+  // Appropriate safeguards verification
+  action validate_transfer_safeguards(transfer_details) with {
+    acceptable_mechanisms: [
+      "standard_contractual_clauses", "binding_corporate_rules",
+      "approved_code_of_conduct", "approved_certification_mechanism"
+    ],
+    documentation_required: true,
+    periodic_review: true
+  };
+  
+  // Derogation validation
+  action validate_transfer_derogation(transfer_details) with {
+    acceptable_derogations: [
+      "explicit_consent", "contract_performance", "public_interest",
+      "legal_claims", "vital_interests", "public_register_data"
+    ],
+    strict_interpretation: true,
+    documentation_required: true
+  };
+  
+  // Transfer impact assessment
+  action conduct_transfer_impact_assessment(transfer_details) with {
+    assessment_factors: [
+      "destination_legal_framework", "recipient_safeguards",
+      "onward_transfer_controls", "access_remedies",
+      "enforcement_mechanisms"
+    ],
+    documentation_required: true,
+    review_frequency: 365  // days
+  };
+  
+  // Supplementary measures
+  deny transfer where transfer_risk_level(transfer_id) == "high" &&
+                   !has_supplementary_measures(transfer_id);
+}
+
+```
+
+## Policy Mappings to GDPR Articles
+
+AgentIQ's policy rules can be directly mapped to GDPR articles for traceability:
+
+| GDPR Article | Policy Rule | Implementation |
+|--------------|-------------|----------------|
+| Article 5: Principles | `deny processing where !is_minimal_data_collection()` | Data minimization |
+| Article 6: Lawfulness | `deny processing where !has_valid_legal_basis()` | Legal basis verification |
+| Article 7: Consent | `deny processing where legal_basis() == "consent" && !has_valid_consent()` | Consent validation |
+| Article 12-23: Data Subject Rights | `action provide_data_access()` | Rights implementation |
+| Article 24: Controller Responsibility | `action document_processing_activity()` | Processing documentation |
+| Article 25: Privacy by Design | `deny system_configuration where !privacy_by_default()` | Default settings |
+| Article 30: Records of Processing | `deny new_processing where !has_processing_record()` | Processing records |
+| Article 32: Security | `check_output pii with { action: "redact" }` | PII protection |
+| Article 33-34: Breach Notification | `action notify_supervisory_authority()` | Breach notification |
+| Article 35: DPIA | `deny high_risk_processing where !has_completed_dpia()` | Impact assessment |
+| Article 44-50: Transfers | `deny transfer where transfer_destination() == "non-adequate"` | Transfer controls |
+
+## Compliance Verification Checklist
+
+Use this checklist to verify your GDPR compliance implementation:
+
+- [ ] Legal basis for processing is verified before data processing
+- [ ] Consent management mechanisms are properly implemented
+- [ ] Data subject rights fulfillment processes are in place
+- [ ] Privacy by design principles are embedded in system design
+- [ ] Data minimization is enforced throughout processing
+- [ ] Records of processing activities are maintained
+- [ ] Data Protection Impact Assessments for high-risk processing
+- [ ] Security measures protect data integrity and confidentiality
+- [ ] Breach detection and notification procedures are defined
+- [ ] International data transfer safeguards are implemented
+- [ ] Policies map directly to GDPR regulatory requirements
+- [ ] Regular assessments ensure ongoing compliance
+
+## Conclusion
+
+GDPR compliance requires systematic implementation of data protection principles and controls. By leveraging AgentIQ's Policy Engine, organizations can embed these requirements directly into AI systems and demonstrate accountability effectively.
+
+For additional guidance, refer to other compliance resources:
+
+<CardGroup cols={3}>
+  <Card title="HIPAA Compliance" icon="hospital" href="/policy-engine/compliance/hipaa">
+    Healthcare regulations
+  </Card>
+  <Card title="EU AI Act" icon="robot" href="/policy-engine/compliance/eu_ai_act">
+    AI specific regulations
+  </Card>
+  <Card title="Compliance Overview" icon="clipboard-check" href="/policy-engine/compliance/overview">
+    General compliance approach
+  </Card>
+</CardGroup>

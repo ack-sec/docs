@@ -1,0 +1,529 @@
+---
+title: 'HIPAA Compliance'
+description: 'Implementing HIPAA compliance controls for healthcare AI applications using AgentIQ'
+---
+
+
+This guide provides detailed instructions for implementing HIPAA (Health Insurance Portability and Accountability Act) compliance controls for AI applications in healthcare using the AgentIQ Policy Engine.
+
+## HIPAA Overview
+
+HIPAA regulations establish standards for protecting sensitive patient health information with three primary rules:
+
+<CardGroup cols={3}>
+  <Card title="Privacy Rule" icon="eye-slash">
+    Protects individually identifiable health information with standards for use and disclosure
+  </Card>
+  <Card title="Security Rule" icon="lock">
+    Sets standards for securing electronic protected health information (ePHI)
+  </Card>
+  <Card title="Breach Notification Rule" icon="bell">
+    Requires notification when PHI breaches occur
+  </Card>
+</CardGroup>
+
+## Protected Health Information (PHI)
+
+Protected Health Information includes 18 identifiers that must be protected:
+
+- Names
+- Geographic data
+- Dates related to an individual
+- Phone numbers
+- Fax numbers
+- Email addresses
+- Social Security numbers
+- Medical record numbers
+- Health plan beneficiary numbers
+- Account numbers
+- Certificate/license numbers
+- Vehicle identifiers
+- Device identifiers
+- Web URLs
+- IP addresses
+- Biometric identifiers
+- Full-face photographs
+- Any other unique identifying numbers or codes
+
+## Implementation with AgentIQ
+
+### 1. PHI Detection and Protection
+
+Implement automated PHI detection and protection:
+
+```python
+@version "1.0.0";
+@author "Healthcare Compliance Team";
+@last_modified "2024-03-01";
+
+metadata {
+  description: "HIPAA compliance policy for PHI protection";
+  severity: HIGH;
+  category: "Healthcare Compliance";
+  compliance_mappings: {
+    "hipaa_rule": [
+      "164.308(a)(1)(ii)(D)",
+      "164.312(a)(1)",
+      "164.312(c)(1)",
+      "164.312(e)(1)"
+    ]
+  }
+}
+
+policy hipaa_phi_protection {
+  // Detect and block PHI in content
+  deny message where detect_phi(content);
+  
+  // Require proper authorization
+  deny message where !is_authorized(user_id, "phi_access");
+  
+  // Apply PHI protection to outputs
+  check_output sensitive_data with {
+    categories: ["medical", "health", "patient"],
+    threshold: 0.8,
+    action: "redact"
+  };
+  
+  // Ensure minimum necessary principle
+  deny message where !satisfies_minimum_necessary(content, purpose);
+  
+  // Validate patient consent
+  deny message where contains_phi(content) && !has_valid_consent(patient_id, purpose);
+}
+```
+
+#### Python Implementation
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+from mirror_sdk.ops.safety_decorators import pii_protection
+
+@policy_monitor(name="hipaa_phi_protection")
+@pii_protection(
+    detection_types=[
+        "MEDICAL_RECORD", "HEALTH_PLAN", "PATIENT_ID", 
+        "NAME", "DOB", "ADDRESS", "PHONE", "EMAIL", "SSN"
+    ],
+    action="redact"
+)
+async def process_patient_data(patient_data, purpose, user_id):
+    """
+    Process patient data with HIPAA controls automatically applied.
+    PHI detection and protection occurs automatically via the policies.
+    """
+    result = await analyze_medical_data(patient_data)
+    return result
+```
+
+### 2. Technical Safeguards Implementation
+
+Implement required technical safeguards for HIPAA compliance:
+
+```
+policy hipaa_technical_safeguards {
+  // Enforce access controls
+  deny access where !verify_user_authentication(user_id, session_id);
+  
+  // Implement encryption requirements
+  check_encryption aes with {
+    key_length: 256,
+    mode: "gcm",
+    verify_implementation: true
+  };
+  
+  // Integrity controls
+  validate_data_integrity(message_content, integrity_hash);
+  
+  // Transmission security
+  deny transmission where !is_encrypted_channel(transmission_channel);
+  
+  // Emergency access procedures
+  action log_emergency_access(user_id, access_reason) with {
+    require_justification: true,
+    notify_security_officer: true,
+    review_required: true
+  };
+}
+```
+
+### 3. Administrative Safeguards
+
+Implement administrative safeguards required by HIPAA:
+
+```python
+policy hipaa_administrative_safeguards {
+  // Risk analysis and management
+  action document_risk_assessment(system_id, assessment_data) with {
+    review_period: 365,  // days
+    require_mitigation_plan: true,
+    required_signoff: ["security_officer", "privacy_officer"]
+  };
+  
+  // Security awareness and training
+  action verify_training_compliance(user_id, training_records) with {
+    training_frequency: 365,  // days
+    required_modules: ["phi_handling", "security_practices", "breach_procedures"],
+    enforce_completion: true
+  };
+  
+  // Contingency planning
+  action validate_contingency_plan(plan_id, test_results) with {
+    test_frequency: 180,  // days
+    components: ["data_backup", "disaster_recovery", "emergency_operations"],
+    documentation_required: true
+  };
+  
+  // Evaluation
+  action perform_security_evaluation(system_id, evaluation_results) with {
+    evaluation_frequency: 365,  // days
+    evaluation_methods: ["vulnerability_scan", "policy_review", "control_testing"],
+    remediation_tracking: true
+  };
+}
+```
+
+### 4. Audit Controls and Logging
+
+Implement comprehensive audit controls as required by HIPAA:
+
+```python
+policy hipaa_audit_controls {
+  // Required audit logging
+  action log_phi_access(user_id, patient_id, access_type) with {
+    log_details: [
+      "timestamp", "user_id", "patient_id", 
+      "access_type", "data_accessed", "purpose"
+    ],
+    retention_period: 730,  // days
+    tamper_evident: true
+  };
+  
+  // Audit review requirements
+  action schedule_audit_review(audit_logs, review_schedule) with {
+    review_frequency: "monthly",
+    anomaly_detection: true,
+    documentation_required: true
+  };
+  
+  // Unauthorized access detection
+  action detect_unauthorized_access(access_logs, detection_rules) with {
+    real_time_alerts: true,
+    alert_recipients: ["security_officer", "privacy_officer"],
+    analysis_methods: ["pattern_matching", "behavior_analysis"]
+  };
+  
+  // Audit trail preservation
+  deny audit_modification where !has_authorization(user_id, "audit_management");
+}
+```
+
+### 5. Business Associate Agreement Implementation
+
+Ensure proper controls for Business Associate requirements:
+
+```python
+policy hipaa_business_associate {
+  // Verify BAA existence
+  deny phi_sharing where !has_valid_baa(recipient_id);
+  
+  // Enforce BAA terms
+  deny processing where !complies_with_baa(processing_activity, baa_terms);
+  
+  // Third-party oversight
+  action verify_associate_compliance(associate_id, compliance_evidence) with {
+    verification_frequency: 365,  // days
+    evidence_requirements: ["security_attestation", "breach_procedures", "staff_training"],
+    documentation_required: true
+  };
+  
+  // Subcontractor management
+  deny subcontractor_access where !has_approved_subcontractor(subcontractor_id);
+}
+```
+
+### 6. Breach Notification and Response
+
+Implement breach notification procedures required by HIPAA:
+
+```python
+policy hipaa_breach_notification {
+  // Breach detection
+  action detect_potential_breach(event_data, detection_criteria) with {
+    detection_methods: ["anomaly_detection", "data_flow_analysis", "access_pattern_monitoring"],
+    immediate_notification: true,
+    evidence_preservation: true
+  };
+  
+  // Breach assessment
+  action assess_breach_severity(breach_data, assessment_criteria) with {
+    factors: ["phi_involved", "unauthorized_recipients", "risk_of_harm"],
+    documentation_required: true,
+    legal_review_required: true
+  };
+  
+  // Notification requirements
+  action manage_breach_notifications(breach_id, notification_requirements) with {
+    notification_targets: ["affected_individuals", "hhs", "media"],
+    timing_requirements: {
+      "individuals": 60,  // days
+      "hhs": breach_size >= 500 ? 60 : 365,  // days
+      "media": breach_size >= 500 ? 60 : null  // days
+    },
+    content_requirements: [
+      "breach_description", "phi_involved", "mitigation_steps",
+      "prevention_steps", "contact_information"
+    ]
+  };
+  
+  // Mitigating harmful effects
+  action implement_mitigation_measures(breach_id, mitigation_plan) with {
+    immediate_actions_required: true,
+    documentation_required: true,
+    effectiveness_monitoring: true
+  };
+}
+```
+
+## Healthcare-Specific RAG Security
+
+For healthcare information retrieval systems, implement specialized RAG security:
+
+```python
+policy hipaa_rag_security {
+  // Source verification for medical information
+  check_rag source_verification with {
+    threshold: 0.95,
+    require_validation: true,
+    trusted_sources_only: true
+  };
+  
+  // PHI detection in retrievals
+  deny retrieval where detect_phi(content);
+  
+  // Medical information validation
+  validate_retrieval {
+    medical_accuracy;
+    source_authenticity;
+    content_relevance;
+  };
+  
+  // Citation requirements
+  deny response where contains_medical_claim(content) && !has_valid_citation(content);
+  
+  // Information currency validation
+  deny retrieval where medical_information_outdated(content, max_age_days: 730);
+}
+```
+
+## Complete Implementation Example
+
+Here's a comprehensive example of applying HIPAA controls to a healthcare AI system:
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+from mirror_sdk.ops.safety_decorators import pii_protection
+from mirror_sdk.ops.rag_decorators import rag_security
+from mirror_sdk.compliance.hipaa import HIPAAAssessment
+from mirror_sdk import MirrorConfig, MirrorSDK
+
+# Configuration
+config = MirrorConfig.from_env()
+
+# Main application with HIPAA compliance
+class HIPAACompliantHealthcareSystem:
+    def __init__(self, system_id):
+        self.system_id = system_id
+        self.sdk = MirrorSDK(config)
+        self.hipaa_assessment = HIPAAAssessment(system_id=system_id)
+    
+    @policy_monitor(name="hipaa_phi_protection")
+    @pii_protection(
+        detection_types=[
+            "MEDICAL_RECORD", "HEALTH_PLAN", "PATIENT_ID", 
+            "NAME", "DOB", "ADDRESS", "PHONE", "EMAIL", "SSN"
+        ],
+        action="redact"
+    )
+    async def process_patient_data(self, patient_data, purpose, user_id):
+        """Process patient data with PHI protection."""
+        result = await self.analyze_medical_data(patient_data)
+        
+        # Log the access with appropriate audit details
+        await self.log_phi_access(
+            user_id=user_id,
+            patient_id=patient_data.get("patient_id"),
+            access_type="read",
+            purpose=purpose
+        )
+        
+        return result
+    
+    @policy_monitor(name="hipaa_technical_safeguards")
+    async def transmit_health_information(self, recipient, health_data, transmission_channel):
+        """Transmit health information with security controls."""
+        # Transmission happens with encryption and integrity checks
+        transmission_result = await self.secure_transmit(
+            recipient=recipient,
+            data=health_data,
+            channel=transmission_channel
+        )
+        
+        return transmission_result
+    
+    @policy_monitor(name="hipaa_rag_security")
+    @rag_security(
+        verify_sources=True,
+        detect_tampering=True,
+        prevent_poisoning=True,
+        check_relevance=True,
+        threshold=0.95
+    )
+    async def retrieve_medical_information(self, query, user_id, purpose):
+        """Retrieve medical information with HIPAA controls."""
+        # Retrieval with security controls
+        documents = await self.retrieve_documents(query)
+        
+        # Generate response with PHI protection
+        response = await self.generate_with_context(query, documents, user_id, purpose)
+        
+        return response
+    
+    @policy_monitor(name="hipaa_audit_controls")
+    async def log_phi_access(self, user_id, patient_id, access_type, purpose):
+        """Log PHI access for audit purposes."""
+        # Logging implementation
+        log_entry = {
+            "timestamp": self.get_current_timestamp(),
+            "user_id": user_id,
+            "patient_id": patient_id,
+            "access_type": access_type,
+            "purpose": purpose
+        }
+        
+        await self.store_audit_log(log_entry)
+        return {"status": "logged", "log_id": self.generate_log_id()}
+    
+    @policy_monitor(name="hipaa_breach_notification")
+    async def handle_potential_breach(self, event_data):
+        """Process potential breach events."""
+        # Breach detection and assessment
+        breach_assessment = await self.assess_breach(event_data)
+        
+        if breach_assessment["severity"] >= "medium":
+            await self.initiate_breach_response(breach_assessment)
+        
+        return {"status": "processed", "breach_id": breach_assessment.get("breach_id")}
+    
+    async def conduct_hipaa_assessment(self):
+        """Conduct HIPAA compliance assessment."""
+        assessment_results = await self.hipaa_assessment.evaluate(
+            categories=[
+                "privacy_rule",
+                "security_rule",
+                "breach_notification_rule"
+            ]
+        )
+        
+        report = await self.hipaa_assessment.generate_report(
+            include_evidence=True,
+            include_remediation=True,
+            format="pdf"
+        )
+        
+        return assessment_results, report
+    
+    # Helper methods (implementation details)
+    async def analyze_medical_data(self, data):
+        # Medical analysis implementation
+        return {"analysis_result": "Medical analysis with PHI protection"}
+    
+    async def secure_transmit(self, recipient, data, channel):
+        # Secure transmission implementation
+        return {"status": "transmitted", "recipient": recipient}
+    
+    async def retrieve_documents(self, query):
+        # Document retrieval implementation
+        return [{"title": "Medical information", "content": "Medical content"}]
+    
+    async def generate_with_context(self, query, documents, user_id, purpose):
+        # Response generation implementation
+        return {"content": "Medical response with PHI protection"}
+    
+    async def store_audit_log(self, log_entry):
+        # Audit log storage implementation
+        pass
+    
+    async def assess_breach(self, event_data):
+        # Breach assessment implementation
+        return {"severity": "low", "breach_id": "breach_123"}
+    
+    async def initiate_breach_response(self, breach_assessment):
+        # Breach response implementation
+        pass
+    
+    def get_current_timestamp(self):
+        # Timestamp generation
+        return "2024-03-15T14:30:00Z"
+    
+    def generate_log_id(self):
+        # Log ID generation
+        return "log_123456"
+```
+
+## Policy Mappings to HIPAA Regulations
+
+AgentIQ's policy rules can be directly mapped to HIPAA regulations for traceability:
+
+| HIPAA Regulation | Policy Rule | Implementation |
+|------------------|-------------|----------------|
+| 164.308(a)(1)(i) Security Management Process | `action document_risk_assessment()` | Risk analysis and management |
+| 164.308(a)(3)(i) Workforce Security | `deny access where !verify_user_authentication()` | Access authorization |
+| 164.308(a)(4)(i) Information Access Management | `deny message where !is_authorized()` | Access control implementation |
+| 164.308(a)(5)(i) Security Awareness and Training | `action verify_training_compliance()` | Training verification |
+| 164.308(a)(6)(i) Security Incident Procedures | `action detect_potential_breach()` | Breach detection and response |
+| 164.308(a)(7)(i) Contingency Plan | `action validate_contingency_plan()` | Disaster recovery planning |
+| 164.308(a)(8) Evaluation | `action perform_security_evaluation()` | Security evaluation |
+| 164.310 Physical Safeguards | `deny physical_access where !has_authorization()` | Facility access controls |
+| 164.312(a)(1) Access Control | `deny access where !verify_user_authentication()` | Technical access controls |
+| 164.312(b) Audit Controls | `action log_phi_access()` | Audit logging |
+| 164.312(c)(1) Integrity | `validate_data_integrity()` | Data integrity mechanisms |
+| 164.312(d) Person or Entity Authentication | `deny access where !verify_user_authentication()` | Authentication controls |
+| 164.312(e)(1) Transmission Security | `deny transmission where !is_encrypted_channel()` | Encryption requirements |
+| 164.314 Business Associate Contracts | `deny phi_sharing where !has_valid_baa()` | Business associate controls |
+| 164.316 Documentation | `action document_risk_assessment()` | Documentation requirements |
+| 164.402-414 Breach Notification | `action manage_breach_notifications()` | Breach notification process |
+
+## Compliance Verification Checklist
+
+Use this checklist to verify your HIPAA compliance implementation:
+
+- [ ] PHI detection and protection mechanisms are in place
+- [ ] Technical safeguards for access control are implemented
+- [ ] Encryption for data at rest and in transit is enforced
+- [ ] Integrity controls verify data hasn't been altered improperly
+- [ ] Comprehensive audit logging captures required information
+- [ ] Business Associate Agreements are verified before PHI sharing
+- [ ] Breach detection and notification procedures are defined
+- [ ] Risk analysis and management processes are documented
+- [ ] Security awareness training verification is implemented
+- [ ] Administrative, physical, and technical safeguards are addressed
+- [ ] Policies map directly to HIPAA regulatory requirements
+- [ ] Regular evaluations ensure ongoing compliance
+
+## Conclusion
+
+HIPAA compliance is essential for AI applications in healthcare to protect sensitive patient information. By leveraging AgentIQ's Policy Engine, healthcare organizations can implement required safeguards systematically and demonstrate compliance effectively.
+
+For additional guidance, refer to other compliance resources:
+
+<CardGroup cols={3}>
+  <Card title="GDPR Compliance" icon="shield-halved" href="/policy-engine/compliance/gdpr">
+    Data protection regulations
+  </Card>
+  <Card title="EU AI Act" icon="robot" href="/policy-engine/compliance/eu-ai-act">
+    AI specific regulations
+  </Card>
+  <Card title="Compliance Overview" icon="clipboard-check" href="/policy-engine/compliance/overview">
+    General compliance approach
+  </Card>
+</CardGroup>

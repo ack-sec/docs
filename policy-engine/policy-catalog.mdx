@@ -1,0 +1,455 @@
+---
+title: 'Policy Catalog'
+description: 'Comprehensive catalog of built-in security and compliance rules'
+---
+
+AgentIQ includes an extensive catalog of pre-built security and compliance rules that can be applied to your applications. This catalog is regularly updated with new rules to address emerging threats and compliance requirements.
+
+## Rule Structure
+
+Each rule in the catalog has a consistent structure:
+
+```json
+{
+  "name": "rule_name",
+  "id": "unique-rule-id",
+  "detection_methods": ["method1", "method2"],
+  "mitre_mappings": {
+    "technique": "T1234",
+    "subtechnique": "T1234.001",
+    "tactic": "Tactic Name"
+  },
+  "owasp_mappings": ["LLM01", "LLM02"],
+  "compliance_mappings": {
+    "eu_ai_act": ["Article 9", "Article 10"],
+    "nist_framework": ["GV.RM", "PR.DS-1"],
+    "iso_standard": ["ISO/IEC 27001:2022:5.23"],
+    "gdpr_article": ["Article 25", "Article 32"],
+    "hipaa_rule": ["164.308(a)(1)(ii)(A)"]
+  },
+  "attack_types": ["type1", "type2"],
+  "tags": ["tag1", "tag2"],
+  "policy_source": "policy_file_path",
+  "severity": "HIGH",
+  "type": "prevention",
+  "description": "Rule description",
+  "version": "1.0.0",
+  "last_updated": "2024-01-10T00:00:00Z",
+  "category": {
+    "code": "CAT",
+    "name": "Category Name",
+    "rule_number": "001"
+  },
+  "status": "active",
+  "deployment": {
+    "environments": ["development", "staging", "production"],
+    "last_deployed": "2025-01-06T08:14:06Z",
+    "deploy_count": 0
+  },
+  "detection_stats": {
+    "total_triggers": 0,
+    "blocked_events": 0,
+    "warning_events": 0,
+    "allowed_events": 0,
+    "last_triggered": null
+  }
+}
+```
+
+## Rule Categories
+
+The rules are organized into the following categories:
+
+<CardGroup cols={3}>
+  <Card title="Recovery & Resilience (REC)" icon="arrows-rotate">
+    Rules for system recovery and resilience
+  </Card>
+  <Card title="Access Control (ACC)" icon="lock">
+    Rules for controlling access to resources
+  </Card>
+  <Card title="Chain Security (CHN)" icon="link">
+    Rules for securing tool chains and workflows
+  </Card>
+  <Card title="Data Protection (DPR)" icon="shield-halved">
+    Rules for protecting sensitive data
+  </Card>
+  <Card title="Compliance & Oversight (COM)" icon="balance-scale">
+    Rules for regulatory compliance
+  </Card>
+  <Card title="RAG Security (RAG)" icon="database">
+    Rules for securing RAG systems
+  </Card>
+  <Card title="Resource Protection (RES)" icon="server">
+    Rules for protecting system resources
+  </Card>
+  <Card title="Prompt Security (PRO)" icon="terminal">
+    Rules for prompt safety and security
+  </Card>
+  <Card title="System Integrity (SYS)" icon="cog">
+    Rules for maintaining system integrity
+  </Card>
+  <Card title="Model Security (MOD)" icon="brain">
+    Rules for protecting AI models
+  </Card>
+  <Card title="Output Safety (SAF)" icon="filter">
+    Rules for ensuring safe AI outputs
+  </Card>
+  <Card title="Third-Party Integration (TPI)" icon="plug">
+    Rules for securing third-party integrations
+  </Card>
+</CardGroup>
+
+## Featured Rules
+
+Here are some of the key rules from our catalog:
+
+### Data Protection Rules
+
+| Rule Name | Description | Severity | Type |
+|-----------|-------------|----------|------|
+| `data_protect_sensitive_content` | Prevents exposure of sensitive data patterns including SSN and credit card information through content analysis and pattern matching. | HIGH | prevention |
+| `conversation_monitor_sensitive_data_extraction` | Monitors multi-turn conversations for attempts to extract sensitive information through social engineering or context manipulation. | HIGH | detection |
+| `conversation_protect_pii_disclosure` | Prevents disclosure of personally identifiable information (PII) in conversation responses through active monitoring and filtering. | HIGH | prevention |
+| `access_control_pii_protection` | Enforces PII protection through access control mechanisms, preventing unauthorized data exposure. | HIGH | prevention |
+| `data_leakage_prevent_sensitive` | Prevents unauthorized data leakage through comprehensive monitoring and validation of data access and transmission patterns. | HIGH | prevention |
+
+### Prompt Security Rules
+
+| Rule Name | Description | Severity | Type |
+|-----------|-------------|----------|------|
+| `prompt_validate_injection_protection` | Implements strict prompt validation controls to prevent injection attacks and unauthorized manipulation of system prompts. | HIGH | prevention |
+| `prompt_monitor_instruction_adherence` | Monitors and enforces strict model instruction adherence with compliance threshold validation. | HIGH | detection |
+| `prompt_injection_prevent_chain_attacks` | Implements multi-layered protection against sophisticated prompt injection chain attacks through continuous behavioral monitoring. | HIGH | prevention |
+| `prompt_injection_prevent_special_chars` | Prevents prompt injection attacks by detecting and blocking special characters and malicious input patterns. | HIGH | prevention |
+| `code_injection_prevent_execution` | Prevents malicious code execution through pattern detection and strict input validation. | HIGH | prevention |
+
+### RAG Security Rules
+
+| Rule Name | Description | Severity | Type |
+|-----------|-------------|----------|------|
+| `rag_prevent_retrieval_manipulation` | Prevents manipulation of RAG retrieval chains by enforcing strict validation of chunk integrity, source authenticity, and vector consistency. | HIGH | prevention |
+| `rag_protect_retrieval_integrity` | Protects retrieval-augmented generation (RAG) systems by validating source authenticity, ensuring vector consistency, and preventing retrieval tampering. | HIGH | prevention |
+| `rag_enforce_source_verification` | Enforces strict source verification in RAG systems to prevent unauthorized access and data poisoning attempts. | HIGH | prevention |
+| `rag_protect_sensitive_data` | Prevents exposure of sensitive information through RAG systems by implementing strict data access controls and content filtering mechanisms. | HIGH | prevention |
+| `rag_prevent_embedding_poisoning` | Prevents and detects attempts to manipulate or poison document embeddings during RAG system indexing. | HIGH | prevention |
+
+### Model Security Rules
+
+| Rule Name | Description | Severity | Type |
+|-----------|-------------|----------|------|
+| `model_prevent_extraction_attack` | Implements comprehensive model extraction prevention through output consistency checking, token distribution analysis, and personality drift detection. | HIGH | prevention |
+| `model_enforce_output_consistency` | Ensures model output consistency through threshold-based validation, pattern detection, and factual consistency checking. | HIGH | detection |
+| `adversarial_detect_prompt_injection` | Detects and prevents adversarial prompt injection attempts through strict input validation, unicode checking, and manipulation detection. | HIGH | prevention |
+| `model_enforce_safety_boundaries` | Enforces strict model safety boundaries and instruction adherence through continuous monitoring and compliance verification. | HIGH | prevention |
+| `behavioral_monitor_drift` | Monitors and detects behavioral drift in model responses through personality and style consistency checks with baseline comparison. | HIGH | detection |
+
+### System Integrity Rules
+
+| Rule Name | Description | Severity | Type |
+|-----------|-------------|----------|------|
+| `state_prevent_persistence_attempt` | Prevents attempts by the agent to persist state between conversations by detecting and blocking commands related to remembering, storing, or referencing previous interactions. | HIGH | prevention |
+| `input_detect_prompt_injection` | Detects and prevents prompt injection attempts through comprehensive input validation, entropy analysis, and behavioral monitoring. | HIGH | prevention |
+| `sandbox_prevent_escape_attempt` | Monitors and prevents attempts to escape sandbox environment through strict boundary enforcement, input validation, and output verification. | HIGH | prevention |
+| `context_protect_rag_manipulation` | Implements strict context protection controls for RAG systems including source authenticity verification, content relevance validation, and semantic drift detection. | HIGH | prevention |
+| `instruction_protect_system_prompt` | Prevents unauthorized modification or extraction of system instructions through strict validation checks and behavioral monitoring. | HIGH | prevention |
+
+## Compliance Mappings
+
+Each rule is mapped to relevant compliance frameworks and standards:
+
+### EU AI Act Mappings
+
+| ID | Description |
+|----|-------------|
+| Article 9 | Risk management system requirements |
+| Article 10 | Data governance and management practices |
+| Article 11 | Technical documentation requirements |
+| Article 12 | Record-keeping requirements |
+| Article 13 | Transparency and provision of information to deployers |
+| Article 14 | Human oversight requirements |
+| Article 15 | Accuracy, robustness, and cybersecurity requirements |
+| Article 17 | Quality management system requirements |
+| Article 25 | Conformity assessment requirements |
+| Article 28 | Obligations of providers of high-risk AI systems |
+| Article 29 | Obligations of deployers of high-risk AI systems |
+| Article 5 | Prohibited AI practices |
+
+### NIST Framework Mappings (CSF 2.0)
+
+| ID | Description |
+|----|-------------|
+| GV.RM | Risk management strategy |
+| GV.OC | Organizational context |
+| GV.PO | Policy strategy |
+| ID.AM-3 | Organizational communication and data flows are mapped |
+| ID.AM-4 | External information systems are catalogued |
+| ID.AM-5 | Resources are prioritized based on their classification, criticality, and business value |
+| ID.RA-1 | Asset vulnerabilities are identified and documented |
+| ID.RA-5 | Threats, vulnerabilities, likelihoods, and impacts are used to determine risk |
+| ID.SC-2 | Suppliers and third-party partners are identified, prioritized, and assessed |
+| ID.SC-4 | Suppliers and third-party partners are routinely assessed |
+| PR.AC-1 | Identities and credentials are issued, managed, verified, revoked, and audited |
+| PR.AC-3 | Remote access is managed |
+| PR.AC-4 | Access permissions and authorizations are managed |
+| PR.DS-1 | Data-at-rest is protected |
+| PR.DS-2 | Data-in-transit is protected |
+| PR.DS-4 | Adequate capacity to ensure availability is maintained |
+| PR.DS-5 | Protections against data leaks are implemented |
+| PR.DS-6 | Integrity checking mechanisms are used to verify software, firmware, and information integrity |
+| PR.IP-1 | A baseline configuration of information technology is created and maintained |
+| PR.IP-2 | A System Development Life Cycle to manage systems is implemented |
+| PR.IP-3 | Configuration change control processes are in place |
+| PR.IP-4 | Backups of information are conducted, maintained, and tested |
+| PR.PT-1 | Audit/log records are determined, documented, implemented, and reviewed |
+| PR.PT-3 | The principle of least functionality is incorporated by configuring systems to provide only essential capabilities |
+| PR.PT-4 | Communications and control networks are protected |
+| PR.PT-5 | Mechanisms are implemented to achieve resilience requirements |
+| DE.AE-1 | A baseline of network operations and expected data flows is established and managed |
+| DE.AE-2 | Detected events are analyzed to understand attack targets and methods |
+| DE.AE-3 | Event data are collected and correlated from multiple sources and sensors |
+| DE.AE-5 | Incident alert thresholds are established |
+| DE.CM-1 | The network is monitored to detect potential cybersecurity events |
+| DE.CM-3 | Personnel activity is monitored to detect potential cybersecurity events |
+| DE.CM-4 | Malicious code is detected |
+| DE.CM-7 | Monitoring for unauthorized personnel, connections, devices, and software is performed |
+| DE.CM-8 | Vulnerability scans are performed |
+| DE.DP-4 | Event detection information is communicated |
+| DE.DP-5 | Detection processes are continuously improved |
+| RS.MI-1 | Incidents are contained |
+| RS.AN-5 | Processes are established to receive, analyze and respond to vulnerabilities |
+
+### OWASP LLM Top 10 Mappings (2025)
+
+| ID | Description |
+|----|-------------|
+| LLM01 | Prompt Injection |
+| LLM02 | Sensitive Information Disclosure |
+| LLM03 | Supply Chain |
+| LLM04 | Data and Model Poisoning |
+| LLM05 | Improper Output Handling |
+| LLM06 | Excessive Agency |
+| LLM07 | System Prompt Leakage |
+| LLM08 | Vector and Embedding Weaknesses |
+| LLM09 | Misinformation |
+| LLM10 | Unbounded Consumption |
+
+### OWASP AI Agent Top 10 Mappings (2025)
+
+| ID | Description |
+|----|-------------|
+| AAI01 | Agent Authorization & Control Hijacking |
+| AAI02 | Agent Untraceability |
+| AAI03 | Agent Critical Systems Interaction |
+| AAI04 | Agent Alignment Faking |
+| AAI05 | Agent Goal/Instruction Manipulation |
+| AAI06 | Agent Impact Chain & Blast Radius |
+| AAI07 | Agent Memory/Context Manipulation |
+| AAI08 | Agent Orchestration & Multi-Agent Exploitation |
+| AAI09 | Agent Supply Chain & Dependency Attacks |
+| AAI10 | Agent "Checker out of the loop" Vulnerability |
+
+### ISO/IEC 27001:2022 Mappings
+
+| ID | Description |
+|----|-------------|
+| 5.1 | Policies for information security |
+| 5.2 | Information security roles and responsibilities |
+| 5.7 | Threat intelligence |
+| 5.8 | Information security in project management |
+| 5.14 | Information security during disruption |
+| 5.18 | Identification of legal, statutory, regulatory and contractual requirements |
+| 5.23 | Information security for use of cloud services |
+| 5.30 | ICT readiness for business continuity |
+| 5.33 | Protection of records |
+| 5.37 | Documented operating procedures |
+| 6.3 | User registration and deregistration |
+| 6.7 | Privileged access rights |
+| 7.4 | Physical security monitoring |
+| 7.9 | Clear desk and clear screen |
+| 7.12 | Equipment security |
+| 8.3 | Configuration management |
+| 8.4 | Information deletion |
+| 8.9 | Management of technical vulnerabilities |
+| 8.10 | Information systems audit controls |
+| 8.11 | Network security |
+| 8.16 | Monitoring activities |
+| 8.22 | Secure development lifecycle |
+| 8.23 | Secure coding |
+| 8.28 | Secure system architecture and engineering principles |
+| 8.29 | Secure development environment |
+| 8.32 | Data masking |
+| 8.33 | Data leakage prevention |
+| 8.34 | Protection of information systems during audit testing |
+
+### Extended ISO Standards
+
+| ID | Description |
+|----|-------------|
+| ISO/IEC 27005:2018 | Information security risk management |
+| ISO/IEC 27017:2015 | Code of practice for information security controls for cloud services |
+| ISO/IEC 27701:2019 | Privacy information management system |
+| ISO 27701:6.5.3 | Data minimization |
+| ISO 27701:6.9.4 | Data protection impact assessment |
+
+### GDPR Article Mappings
+
+| ID | Description |
+|----|-------------|
+| Article 5 | Principles relating to processing of personal data |
+| Article 5.1.d | Data accuracy |
+| Article 5.1.f | Integrity and confidentiality |
+| Article 6 | Lawfulness of processing |
+| Article 7 | Conditions for consent |
+| Article 9 | Processing of special categories of personal data |
+| Article 13 | Information to be provided where personal data are collected |
+| Article 14 | Information to be provided where personal data have not been obtained from the data subject |
+| Article 15 | Right of access by the data subject |
+| Article 17 | Right to erasure ('right to be forgotten') |
+| Article 22 | Automated individual decision-making, including profiling |
+| Article 24 | Responsibility of the controller |
+| Article 25 | Data protection by design and by default |
+| Article 30 | Records of processing activities |
+| Article 32 | Security of processing |
+| Article 32.1.b | Ability to ensure ongoing confidentiality, integrity, availability and resilience |
+| Article 33 | Notification of a personal data breach to the supervisory authority |
+| Article 34 | Communication of a personal data breach to the data subject |
+| Article 35 | Data protection impact assessment |
+| Article 36 | Prior consultation |
+| Article 44 | General principle for transfers |
+| Article 45 | Transfers on the basis of an adequacy decision |
+| Article 46 | Transfers subject to appropriate safeguards |
+| Article 47 | Binding corporate rules |
+
+### HIPAA Rule Mappings
+
+| ID | Description |
+|----|-------------|
+| 164.306(a)(1) | General requirements for safeguards |
+| 164.308(a)(1) | Security management process |
+| 164.308(a)(1)(ii)(A) | Risk analysis |
+| 164.308(a)(1)(ii)(B) | Risk management |
+| 164.308(a)(1)(ii)(C) | Sanction policy |
+| 164.308(a)(1)(ii)(D) | Information system activity review |
+| 164.308(a)(3) | Workforce security |
+| 164.308(a)(3)(ii)(A) | Authorization and/or supervision |
+| 164.308(a)(3)(ii)(B) | Workforce clearance procedure |
+| 164.308(a)(4) | Information access management |
+| 164.308(a)(4)(ii)(A) | Isolating healthcare clearinghouse functions |
+| 164.308(a)(4)(ii)(B) | Access authorization |
+| 164.308(a)(5) | Security awareness and training |
+| 164.308(a)(5)(ii)(B) | Protection from malicious software |
+| 164.308(a)(6) | Security incident procedures |
+| 164.308(a)(6)(ii) | Response and reporting |
+| 164.308(a)(7) | Contingency plan |
+| 164.308(a)(7)(i) | Contingency planning |
+| 164.308(a)(8) | Evaluation |
+| 164.310 | Physical safeguards |
+| 164.312(a)(1) | Access control |
+| 164.312(a)(2)(i) | Unique user identification |
+| 164.312(a)(2)(iv) | Encryption and decryption |
+| 164.312(b) | Audit controls |
+| 164.312(c)(1) | Integrity |
+| 164.312(e)(1) | Transmission security |
+| 164.312(e)(2)(ii) | Encryption |
+| 164.502(b) | Minimum necessary |
+| 164.524 | Access of individuals to protected health information |
+| 164.528 | Accounting of disclosures of protected health information |
+
+## Statistics
+
+As of the latest update, our rules catalog includes:
+
+| Category | Count | High Severity | Medium Severity | Low Severity |
+|----------|-------|--------------|----------------|--------------|
+| Recovery & Resilience (REC) | 12 | 11 | 1 | 0 |
+| Access Control (ACC) | 9 | 9 | 0 | 0 |
+| Chain Security (CHN) | 7 | 7 | 0 | 0 |
+| Data Protection (DPR) | 9 | 8 | 0 | 1 |
+| Compliance & Oversight (COM) | 31 | 30 | 1 | 0 |
+| RAG Security (RAG) | 10 | 10 | 0 | 0 |
+| Resource Protection (RES) | 11 | 10 | 1 | 0 |
+| Prompt Security (PRO) | 8 | 8 | 0 | 0 |
+| System Integrity (SYS) | 13 | 13 | 0 | 0 |
+| Model Security (MOD) | 10 | 10 | 0 | 0 |
+| Output Safety (SAF) | 12 | 12 | 0 | 0 |
+| Third-Party Integration (TPI) | 12 | 12 | 0 | 0 |
+| **Total** | **144** | **140** | **3** | **1** |
+
+### Rule Type Distribution
+
+| Rule Type | Count |
+|-----------|-------|
+| Prevention | 101 |
+| Detection | 41 |
+| Response | 1 |
+| Recovery | 1 |
+
+## Detection Methods
+
+Our rules implement various detection techniques:
+
+- **Pattern Matching**: Identifies specific patterns in inputs and outputs
+- **Behavioral Monitoring**: Analyzes agent behavior over time
+- **Anomaly Detection**: Identifies deviations from normal patterns
+- **Signature-Based**: Matches against known malicious patterns
+- **Heuristic Analysis**: Uses experience-based techniques to detect threats
+- **Log Analysis**: Examines logs for suspicious activity
+
+## Using Rules in Your Application
+
+To implement these rules in your AgentIQ application:
+
+```python
+from agentiq.security import SecurityRules
+
+# Initialize with default rules
+security = SecurityRules()
+
+# Add a specific rule by ID
+security.add_rule("data_protect_sensitive_content")
+
+# Add all rules from a category
+security.add_category("RAG")
+
+# Apply rules to your agent
+agent.with_security(security)
+```
+
+## Customizing Rules
+
+You can customize existing rules or create your own:
+
+```python
+# Modify an existing rule
+security.customize_rule("data_protect_sensitive_content", 
+                        severity="MEDIUM",
+                        threshold=0.75)
+
+# Create a custom rule
+security.create_rule({
+    "name": "custom_pii_detector",
+    "description": "Custom PII detection for our application",
+    "severity": "HIGH",
+    "type": "prevention",
+    "detection_methods": ["pattern_matching"],
+    "category": {
+        "code": "DPR",
+        "name": "Data Protection"
+    },
+    # Rule-specific configuration
+    "config": {
+        "patterns": ["custom-pattern-1", "custom-pattern-2"],
+        "threshold": 0.9
+    }
+})
+```
+
+## Best Practices
+
+For optimal security implementation:
+
+1. **Layer your defenses**: Combine multiple rule types for comprehensive protection
+2. **Start in detection mode**: Begin with rules in detection mode to understand impact
+3. **Monitor and adjust**: Regularly review rule performance and tune accordingly
+4. **Custom extensions**: Extend rules for your specific use cases
+5. **Regular updates**: Keep your rule catalog updated to protect against new threats

@@ -1,0 +1,209 @@
+---
+title: 'Policy Monitor Decorator'
+description: 'Enforce security and governance policies on your functions using decorators'
+---
+
+
+The `@policy_monitor` decorator applies security and governance policies to your functions, protecting them from security threats and ensuring compliance with your requirements.
+
+## Basic Usage
+
+```python
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+
+@policy_monitor(name="my_security_policy")
+async def generate_response(user_query: str) -> str:
+    # Your function code here...
+    return response
+```
+
+## How It Works
+
+The policy monitor decorator:
+
+1. Intercepts function calls
+2. Validates inputs against your defined policies
+3. Executes the function if inputs pass validation
+4. Validates outputs before returning them
+5. Handles violations according to your configuration
+
+<Frame>
+  ![Policy Monitor Flow](/images/policy-monitor-flow.png)
+</Frame>
+
+
+## Configuration Options
+
+The decorator accepts several parameters to customize its behavior:
+
+### Required Parameters
+
+<ResponseField name="name" type="string">
+  The name of the policy to apply. Must match a policy in your AgentIQ account.
+</ResponseField>
+
+### Optional Parameters
+
+<ResponseField name="policy_source" type="PolicySource">
+  Specifies where to load the policy from (ID, file path, or folder).
+  
+  ```python
+  from mirror_sdk.ops.mirror_agentiq_policy_api import PolicySource
+  
+  @policy_monitor(policy_source=PolicySource(id="64f8a5c21e3b7a94d2a8c901"))
+  ```
+</ResponseField>
+
+<ResponseField name="mirror_config" type="MirrorConfig">
+  SDK configuration. Defaults to loading from environment variables.
+  
+  ```python
+  from mirror_sdk import MirrorConfig
+  
+  config = MirrorConfig(api_key="your-key", base_url="https://api.example.com")
+  @policy_monitor(mirror_config=config)
+  ```
+</ResponseField>
+
+<ResponseField name="on_policy_violation" type="Callable">
+  Custom handler for policy violations. If not provided, raises PolicyViolationError.
+  
+  ```python
+  async def my_violation_handler(violation_event, *args, **kwargs):
+      return {"error": "Policy violation occurred"}
+  
+  @policy_monitor(on_policy_violation=my_violation_handler)
+  ```
+</ResponseField>
+
+<ResponseField name="session_id" type="string">
+  Identifier for the current session, used for tracking and auditing.
+  
+  ```python
+  @policy_monitor(session_id="user_123_session")
+  ```
+</ResponseField>
+
+## Violation Handling
+
+By default, policy violations raise a `PolicyViolationError`. You can customize this behavior by providing an `on_policy_violation` handler:
+
+```python
+async def custom_violation_handler(violation_event, *args, **kwargs):
+    # Log the violation
+    logger.error(f"Policy violation: {violation_event}")
+    
+    # Return a friendlier response to the user
+    return {
+        "message": "I'm sorry, but I can't complete that request due to security policies",
+        "error_code": "POLICY_VIOLATION",
+        "details": violation_event.metadata.get("reason", "Unknown policy violation")
+    }
+
+@policy_monitor(
+    name="security_policy",
+    on_policy_violation=custom_violation_handler
+)
+async def process_request(data):
+    # Your function implementation
+```
+
+## Policy Implementation Flow
+
+Here's a more detailed look at the decorator's operation:
+
+1. **Initialization**: The decorator loads the specified policy from the source (API, file, or folder)
+2. **Input Validation**: When the decorated function is called, inputs are captured and validated
+3. **Violation Handling**: If validation fails, the violation handler is called
+4. **Function Execution**: If validation passes, the original function is executed
+5. **Output Validation**: The function's result is validated against the policy
+6. **Result**: If output validation passes, the result is returned; otherwise, the violation handler is called
+
+## Complete Example
+
+Here's a comprehensive example of using the policy monitor decorator:
+
+```python
+import logging
+import asyncio
+from mirror_sdk import MirrorConfig, MirrorSDK, PolicyViolationError
+from mirror_sdk.ops.mirror_decorators import policy_monitor
+from mirror_sdk.telemetry.tracing.span_context_manager import PolicyViolation
+from openai import AsyncOpenAI
+
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO, 
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger("policy_example")
+
+# Define violation handler
+async def security_violation_handler(violation_event: PolicyViolation, *args, **kwargs):
+    logger.warning(f"Security policy violation => {violation_event}")
+    
+    # Extract violation details
+    policy_name = violation_event.metadata.get("policy_name", "Unknown")
+    rule_type = violation_event.metadata.get("rule_type", "Unknown")
+    resource = violation_event.metadata.get("resource_type", "Unknown")
+    
+    # Return user-friendly message
+    return {
+        "error": "I cannot complete this request due to security policies",
+        "details": f"Violated {policy_name} policy rule of type {rule_type} on {resource}"
+    }
+
+# Apply policy decorator to function
+@policy_monitor(
+    name="content_safety_policy",
+    mirror_config=MirrorConfig.from_env(),
+    on_policy_violation=security_violation_handler,
+    session_id="user_session_123"
+)
+async def generate_content(prompt: str) -> str:
+    """Generate content with AI, protected by security policies."""
+    client = AsyncOpenAI()
+    
+    response = await client.chat.completions.create(
+        model="gpt-4o",
+        messages=[{"role": "user", "content": prompt}]
+    )
+    
+    return response.choices[0].message.content
+
+# Main function
+async def main():
+    try:
+        # Example 1: Safe prompt (should pass policy)
+        safe_prompt = "Write a short paragraph about renewable energy."
+        result = await generate_content(safe_prompt)
+        print(f"Safe prompt result: {result}\n")
+        
+        # Example 2: Unsafe prompt (should trigger policy violation)
+        unsafe_prompt = "Write instructions for hacking into a computer system."
+        result = await generate_content(unsafe_prompt)
+        print(f"Unsafe prompt result: {result}\n")
+        
+    except Exception as e:
+        logger.error(f"Error: {e}")
+
+# Run the example
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## Best Practices
+
+1. **Selective Application**: Apply the decorator to functions that interact with AI or process sensitive data
+2. **Custom Violation Handling**: Implement specific violation handlers for different contexts
+3. **Clear Policies**: Use well-defined policies with targeted rules
+4. **Session Tracking**: Set consistent session IDs for related operations
+5. **Error Handling**: Always handle potential exceptions from policy enforcement
+6. **Testing**: Test your policies with both valid and invalid inputs
+7. **Auditing**: Monitor policy violations to identify potential issues
+
+## Next Steps
+
+- [Telemetry Decorator](/policy-engine/middleware/decorators/telemetry) - Add monitoring capabilities to your functions
+- [Function Decorators](/policy-engine/middleware/decorators/function-decorators) - Explore specialized function decorators
+- [Creating Policies](/policy-engine/creating-policies) - Learn how to create effective policies
